@@ -1,0 +1,6 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+4,2,2.40621017588442,1.72100238323538,0.492740856701756,"Apical part of cell","Apical part
+of cell"
+2,3,4.467381351443,1.94628601874527,0.487861354233881,"Basal part of cell","Basal part
+of cell"
+1,3,2.53403266522176,1.39408740841689,0.394945621815866,"Cell periphery","Cell periphery"

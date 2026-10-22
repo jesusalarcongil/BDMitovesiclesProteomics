@@ -1,0 +1,12 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+3,3,2.1780689501005,1.61368485026588,0.58971328721708,"Monoatomic ion transport","Monoatomic ion
+transport"
+4,2,1.73570208505026,1.83222741034818,0.543251857250954,"Sodium ion transport","Sodium ion
+transport"
+5,2,1.79001372104889,1.85324170361173,0.481299662264929,"Monoatomic anion transport","Monoatomic anion
+transport"
+1,4,1.79674960331023,1.78260881490295,0.466881248622952,"Organic anion transport","Organic anion
+transport"
+6,2,1.75807065643844,1.83653077575416,0.454455573594432,"Inorganic anion transport","Inorganic anion
+transport"
+2,4,2.2965737124559,1.74067686700391,0.367203433906983,"Transmembrane transport","Transmembrane transport"

@@ -1,0 +1,8 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+2,3,1.4942115150304,-1.56247508009405,0.529176903334592,"Distal axon","Distal axon"
+3,2,1.76334200986727,-1.33417848098324,0.464698993827414,"Synapse","Synapse"
+4,2,1.34222727445439,1.49356597403746,0.443350556955758,"Nuclear outer membrane-endoplasmic reticulum membrane network","Nuclear outer membrane-endoplasmic
+reticulum membrane network"
+5,2,2.2220788577015,1.25289514609685,0.311329741951988,"Organelle membrane","Organelle membrane"
+1,4,2.76942149060207,1.68950363316333,0.287556135194165,"Mitochondrial membrane","Mitochondrial membrane"
+6,2,1.31621200561533,1.7654329854958,0.276059374122121,"Intermediate filament","Intermediate filament"

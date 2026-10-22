@@ -1,0 +1,4 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+2,4,2.09802059784009,0.219314079422383,0.493815313687172,"Somatodendritic compartment","Somatodendritic compartment"
+4,3,1.69137293999453,0.0252707581227437,0.247149281505333,"Spliceosomal complex","Spliceosomal complex"
+3,3,1.32833222130915,0.0770156438026474,0.124960536526379,"Myelin sheath","Myelin sheath"

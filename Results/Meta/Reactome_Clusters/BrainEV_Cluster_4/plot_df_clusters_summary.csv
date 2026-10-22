@@ -1,0 +1,9 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+3,5,1.45695917652979,0.0739240506329114,0.479288156056291,"Intracellular signaling by second messengers","Intracellular signaling by
+second messengers"
+5,3,2.02223241320126,0.10210970464135,0.4066471107567,"Adaptive immune system","Adaptive immune
+system"
+4,5,1.8422526417884,0.109873417721519,0.380425833679258,"Clathrin-mediated endocytosis","Clathrin-mediated endocytosis"
+2,5,1.94548131531166,0.0258227848101266,0.316247771836007,"Energy dependent regulation of mtor by lkb1-ampk","Energy dependent regulation of
+mtor by lkb1-ampk"
+1,6,2.16664880357816,0.182700421940928,0.146143069846185,"Immune system","Immune system"

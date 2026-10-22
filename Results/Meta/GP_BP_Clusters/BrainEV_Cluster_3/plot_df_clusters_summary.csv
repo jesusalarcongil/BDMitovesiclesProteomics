@@ -1,0 +1,9 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+1,7,2.8089315328775,0.0963455149501661,0.475317815390913,"Carboxylic acid transport","Carboxylic acid
+transport"
+3,4,2.91530054805197,0.0949612403100775,0.417105022540625,"Monoatomic anion transport","Monoatomic anion
+transport"
+4,4,3.31388704657045,0.0852713178294574,0.413947717462455,"Amino acid transport","Amino acid
+transport"
+2,6,3.14425119511518,0.138242894056848,0.330863626297212,"Organic anion transport","Organic anion
+transport"

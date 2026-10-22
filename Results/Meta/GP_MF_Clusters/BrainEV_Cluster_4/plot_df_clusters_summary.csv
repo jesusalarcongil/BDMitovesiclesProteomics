@@ -1,0 +1,6 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+1,13,2.10913288447235,0.0624391431353457,0.580095041537789,"Phosphotransferase activity, alcohol group as acceptor","Phosphotransferase activity, alcohol
+group as acceptor"
+2,7,1.72250114841016,0.218580470162749,0.561917628215315,"Ribonucleotide binding","Ribonucleotide binding"
+4,3,3.31830784430465,0.0917721518987342,0.355092211887191,"Tubulin binding","Tubulin binding"
+3,5,2.33841684509506,0.0832278481012658,0.265602617323736,"Kinase binding","Kinase binding"

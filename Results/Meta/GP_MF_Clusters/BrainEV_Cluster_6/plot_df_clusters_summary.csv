@@ -1,0 +1,6 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+1,19,7.57341893134262,0.187606112054329,0.716071529166637,"Proton transmembrane transporter activity","Proton transmembrane
+transporter activity"
+2,10,3.4472368026586,0.0451612903225806,0.518681020820228,"Oxidoreduction-driven active transmembrane transporter activity","Oxidoreduction-driven active transmembrane
+transporter activity"
+3,8,5.22712381539428,0.0877016129032258,0.31723477941992,"Oxidoreductase activity","Oxidoreductase activity"

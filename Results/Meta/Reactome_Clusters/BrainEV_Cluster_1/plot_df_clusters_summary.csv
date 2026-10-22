@@ -1,0 +1,4 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+1,4,2.41781804503016,0.0465116279069767,0.514285714285714,"Mitochondrial fatty acid beta-oxidation","Mitochondrial fatty
+acid beta-oxidation"
+2,3,2.5017516870412,0.222868217054264,0.123015873015873,"Metabolism","Metabolism"

@@ -1,0 +1,5 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+1,6,3.80205944352563,1.73338176544565,0.885347545731833,"Transporter activity","Transporter activity"
+3,3,3.4106433978576,1.86460204838442,0.76535925143455,"Active transmembrane transporter activity","Active transmembrane
+transporter activity"
+2,5,1.7174509477651,1.76086069267712,0.598210365157134,"Symporter activity","Symporter activity"

@@ -1,0 +1,8 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+3,4,3.37479972308828,0.085,0.9,"Complex iv assembly","Complex iv
+assembly"
+2,4,5.21501182421642,0.1,0.878787878787879,"Mitochondrial biogenesis","Mitochondrial biogenesis"
+4,4,40.816140046167,0.585,0.588899516446145,"Aerobic respiration and respiratory electron transport","Aerobic respiration and
+respiratory electron transport"
+1,5,6.80265239873988,0.098,0.0854867724867725,"Mitochondrial protein degradation","Mitochondrial protein
+degradation"

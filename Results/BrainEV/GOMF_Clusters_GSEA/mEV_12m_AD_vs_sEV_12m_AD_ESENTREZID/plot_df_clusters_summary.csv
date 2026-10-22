@@ -1,0 +1,6 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+2,8,4.73017035535274,1.50835680963672,0.854207120672397,"Inorganic cation transmembrane transporter activity","Inorganic cation transmembrane
+transporter activity"
+1,9,3.52020277207958,1.54833437692148,0.646875097437539,"Active transmembrane transporter activity","Active transmembrane
+transporter activity"
+3,4,3.05885727960198,1.52688347691843,0.503818349879127,"Oxidoreductase activity","Oxidoreductase activity"

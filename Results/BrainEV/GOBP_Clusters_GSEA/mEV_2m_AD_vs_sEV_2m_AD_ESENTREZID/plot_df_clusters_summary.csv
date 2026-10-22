@@ -1,0 +1,24 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+8,3,4.42491726500266,1.1527447593728,0.733426667109949,"Cellular metabolic process","Cellular metabolic
+process"
+10,2,5.88574599354408,1.24580240991732,0.589276516736917,"Nucleobase-containing compound biosynthetic process","Nucleobase-containing compound
+biosynthetic process"
+4,8,5.87709136845509,1.41762933143801,0.537467578552103,"Proton motive force-driven mitochondrial atp synthesis","Proton motive force-driven
+mitochondrial atp synthesis"
+11,2,5.88574599354408,1.3280423344372,0.529374062087769,"Carbohydrate derivative biosynthetic process","Carbohydrate derivative
+biosynthetic process"
+3,8,4.95324057316816,1.45447349478903,0.529004530905763,"Oxidative phosphorylation","Oxidative phosphorylation"
+12,2,5.88574599354408,1.38451309137465,0.505098959006006,"Purine-containing compound biosynthetic process","Purine-containing compound
+biosynthetic process"
+6,4,5.88574599354408,1.39382112523805,0.463707332758613,"Ribonucleotide biosynthetic process","Ribonucleotide biosynthetic
+process"
+2,10,4.55226136155229,1.30765704049971,0.442856641827663,"Monoatomic ion transmembrane transport","Monoatomic ion
+transmembrane transport"
+1,14,5.88574599354408,1.39538936067602,0.424560545427656,"Ribonucleoside triphosphate biosynthetic process","Ribonucleoside triphosphate
+biosynthetic process"
+7,4,5.0181292710179,1.26555616591418,0.330697581368495,"Organophosphate biosynthetic process","Organophosphate biosynthetic
+process"
+5,7,2.97314766820692,-1.45531430866143,0.311069761812652,"Protein-containing complex assembly","Protein-containing complex
+assembly"
+9,3,5.88574599354408,1.45740656101884,0.28498554624204,"Electron transport chain","Electron transport
+chain"

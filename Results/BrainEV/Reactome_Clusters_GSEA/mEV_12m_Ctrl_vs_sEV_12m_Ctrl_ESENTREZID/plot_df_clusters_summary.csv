@@ -1,0 +1,17 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+6,3,1.50046677645042,-1.77587164077402,1,"Chaperonin-mediated protein folding","Chaperonin-mediated protein
+folding"
+4,4,1.52527097966013,-1.72227746214252,0.923076923076923,"Mitotic metaphase and anaphase","Mitotic metaphase
+and anaphase"
+1,6,1.64860793916906,1.41570516715298,0.891072124756335,"Cellular response to chemical stress","Cellular response to
+chemical stress"
+5,3,1.73565231992976,-1.65231267901562,0.844444444444444,"Axon guidance","Axon guidance"
+8,3,1.32295682065615,-1.70476591949417,0.666666666666667,"Regulation of insulin secretion","Regulation of
+insulin secretion"
+7,3,2.03736172196058,-1.61834219920941,0.573676501360117,"Membrane trafficking","Membrane trafficking"
+3,5,4.50883692286919,1.56243078388967,0.383927860277831,"Aerobic respiration and respiratory electron transport","Aerobic respiration and
+respiratory electron transport"
+2,6,1.88720317989381,-1.74548493491023,0.334638633210615,"Adaptive immune system","Adaptive immune
+system"
+9,2,1.81759002389273,-1.71353711554453,0.115384615384615,"Signaling by receptor tyrosine kinases","Signaling by receptor
+tyrosine kinases"

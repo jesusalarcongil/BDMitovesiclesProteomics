@@ -1,0 +1,25 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+9,3,4.39953693753084,1.16613188493242,0.733426667109949,"Cellular metabolic process","Cellular metabolic
+process"
+11,2,5.96898016618317,1.26595187464398,0.589276516736917,"Nucleobase-containing compound biosynthetic process","Nucleobase-containing compound
+biosynthetic process"
+5,8,5.96898016618317,1.47873519989123,0.537467578552103,"Proton motive force-driven mitochondrial atp synthesis","Proton motive force-driven
+mitochondrial atp synthesis"
+12,2,5.96898016618317,1.39855702942812,0.529374062087769,"Carbohydrate derivative biosynthetic process","Carbohydrate derivative
+biosynthetic process"
+4,8,4.72488392464325,1.49239865314765,0.529004530905763,"Cellular respiration","Cellular respiration"
+13,2,5.96898016618317,1.45032493494731,0.505098959006006,"Purine-containing compound biosynthetic process","Purine-containing compound
+biosynthetic process"
+6,5,4.19114840028743,1.3130327583007,0.473859674070183,"Nucleobase-containing small molecule metabolic process","Nucleobase-containing small molecule
+metabolic process"
+7,4,5.96898016618317,1.46438641200132,0.463707332758613,"Ribonucleotide biosynthetic process","Ribonucleotide biosynthetic
+process"
+2,11,5.13579879790602,1.35369399979381,0.432537236094024,"Proton transmembrane transport","Proton transmembrane
+transport"
+1,12,5.96898016618317,1.47070579025559,0.429085148213283,"Nucleoside triphosphate biosynthetic process","Nucleoside triphosphate
+biosynthetic process"
+3,9,2.71251163312113,-1.92260129904227,0.404578296579769,"Regulated exocytosis","Regulated exocytosis"
+8,4,5.80742656851229,1.30693787149204,0.330697581368495,"Organophosphate biosynthetic process","Organophosphate biosynthetic
+process"
+10,3,5.96898016618317,1.50054155877452,0.28498554624204,"Energy derivation by oxidation of organic compounds","Energy derivation by oxidation
+of organic compounds"

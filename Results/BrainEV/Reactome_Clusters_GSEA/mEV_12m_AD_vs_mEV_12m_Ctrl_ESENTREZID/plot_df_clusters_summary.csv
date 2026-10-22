@@ -1,0 +1,9 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+1,3,1.86314531654508,-1.72733691862593,0.973333333333333,"Mapk1/mapk3 signaling","Mapk1/mapk3 signaling"
+4,2,1.69331546272754,-1.69275240988828,0.863636363636364,"Pip3 activates akt signaling","Pip3 activates
+akt signaling"
+5,2,1.50606479239974,-1.66895045442912,0.846153846153846,"Beta-catenin independent wnt signaling","Beta-catenin independent
+wnt signaling"
+2,3,1.42940313310602,-1.67535077615031,0.590652557319224,"Deubiquitination","Deubiquitination"
+3,3,1.47464790509925,0.604018022928798,0.232804232804233,"Aerobic respiration and respiratory electron transport","Aerobic respiration and
+respiratory electron transport"

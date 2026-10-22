@@ -1,0 +1,3623 @@
+---
+title: "invivomitoEVs"
+author: "Jesus Alarcon-Gil"
+date: "2026-05-22"
+output: html_document
+---
+
+# ANALYSIS CONFIGURATION
+## Loading required libraries and custom functions
+```{r configuration, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Load required libraries
+libraries2load = c("ggplot2", "dplyr", "tidyr", "tibble", "pheatmap",
+                 "RColorBrewer", "org.Mm.eg.db", "ggrepel", "readxl", "stringr",
+                 "gridExtra", "limma", "DEP", "vsn", "mixOmics",
+                 "EnhancedVolcano", "enrichR", "ReactomePA", "clusterProfiler",
+                 "pathview", "enrichplot", "DOSE", "AnnotationDbi", "circlize",
+                 "ComplexHeatmap", "ggnewscale", "SummarizedExperiment",
+                 "stats", "org.Hs.eg.db", "tidytable", "Orthology.eg.db",
+                 "homologene", "HPAanalyze", "UniProt.ws", "fgsea", "tidyverse",
+                 "purrr", "eulerr", "variancePartition", "BiocParallel",
+                 "circlize", "grid", "here","brglm2", "multcomp", "DiscreteFDR",
+                 "simplifyEnrichment", "tidytext")
+
+lapply(libraries2load, library, character.only = TRUE)
+
+
+# Set working directory
+pipelineFolder = dirname(rstudioapi::getActiveDocumentContext()$path)
+setwd(pipelineFolder)
+
+# Load custom functions
+source("./Functions/DatabaseGenerationFunctions.R")
+source("./Functions/EnrichmentAnalysisFunctions.R")
+source("./Functions/ModifiedDEPFunctions.R")
+source("./Functions/NewFunctionsforDEP.R")
+```
+
+## Create the output folder
+```{r outputFolder, include=FALSE}
+# Define the output paths
+outputPaths = c("./Results/BrainEV/VolcanoPlot",
+                "./Results/BrainEV/KEGG",
+                "./Results/BrainEV/GO_BP",
+                "./Results/BrainEV/GO_MF",
+                "./Results/BrainEV/GO_CC",
+                "./Results/BrainEV/Reactome",
+                "./Results/BrainEV/WikiPathways",
+                "./Results/BrainEV/SubCellularLocation",
+                "./Results/BrainEV/GeneralCellType",
+                "./Results/BrainEV/MitoLocation",
+                "./Results/BrainEV/MitoPathway",
+                "./Results/BrainEV/DonutPlot",
+                "./Results/BrainEV/BrainCellType",
+                "./Results/BrainEV/MitoPathway2",
+                "./Results/BrainEV/cellType",
+                "./Results/Human/VolcanoPlot",
+                "./Results/Human/KEGG",
+                "./Results/Human/GO_BP",
+                "./Results/Human/GO_MF",
+                "./Results/Human/GO_CC",
+                "./Results/Human/Reactome",
+                "./Results/Human/WikiPathways",
+                "./Results/Human/SubCellularLocation",
+                "./Results/Human/GeneralCellType",
+                "./Results/Human/MitoLocation",
+                "./Results/Human/MitoPathway",
+                "./Results/Human/DonutPlot",
+                "./Results/Human/BrainCellType",
+                "./Results/Human/cellType",
+                "./Results/Human/MitoPathway2",
+                "./Results/Meta/GeneLists",
+                "./Results/Meta/KEGG",
+                "./Results/Meta/GO_BP",
+                "./Results/Meta/GO_MF",
+                "./Results/Meta/GO_CC",
+                "./Results/Meta/Reactome",
+                "./Results/Meta/WikiPathways",
+                "./Results/Meta/SubCellularLocation",
+                "./Results/Meta/GeneralCellType",
+                "./Results/Meta/MitoLocation",
+                "./Results/Meta/MitoPathway",
+                "./Results/Meta/BrainCellType",
+                "./Results/Meta/cellType",
+                "./Results/Meta/MitoPathway2")
+
+# Create the output paths
+for (x in outputPaths) {
+  if (!dir.exists(x)) {
+    dir.create(x, recursive = TRUE)
+  }
+}
+
+# Set the output paths
+outputDirBrainEV = "./Results/BrainEV/"
+outputDirHuman = "./Results/Human/"
+outputDirMetaAnalysis = "./Results/Meta/"
+```
+
+## Setting Data Formatting Parameters
+```{r dataFormatParameters, include=FALSE}
+# Preprocessing setup
+col_range_BrainEVData = 1:5
+col_range_HumanData = 1:5
+
+row_range_BrainEVData = 3:42
+row_range_HumanData = 3:63
+
+sampleNameColumns = 1
+proteinNameColumns = 1
+samplesIdentifier = "_"
+
+primaryProteinID = "Primary.Gene.name"
+secondaryProteinID = "Ids"
+
+metaColNames_BrainEVData = c("Sample", "Group", "Genotype", "EVs", "Age")
+metaColNames_HumanData = c("Sample", "Group", "Genotype", "EVs", "Age")
+
+relevelVariables_BrainEVData = data.frame(Group = "WT_sEVs_2m",
+                                          Genotype = "Ctrl",
+                                          EVs = "sEV",
+                                          Age = "2m")
+relevelVariables_HumanData = data.frame(Group = "AD_F1_12m",
+                                        Genotype = "AD",
+                                        EVs = "F1",
+                                        Age = "12m")
+```
+
+## Setting Factorial Enrichment Analysis Parameters
+```{r enrichmentParameters, echo=FALSE}
+# Define the formula for the multiple linear models for each analysis
+formulades_BrainEVData = formula(~ 0 + EVs * Age * Genotype)
+formulades_HumanData = formula(~ 0 + EVs)
+
+# Define the contrast formula for each multiple linear model analysis
+contrastFormula_BrainEVData = list(
+  sEV_2m_AD_vs_sEV_2m_Ctrl   = 
+    quote(GenotypeAD),
+  sEV_12m_Ctrl_vs_sEV_2m_Ctrl =
+    quote(Age12m),
+  sEV_12m_AD_vs_sEV_2m_AD     =
+    quote(Age12m + Age12m.GenotypeAD),
+  sEV_12m_AD_vs_sEV_12m_Ctrl  =
+    quote(GenotypeAD + Age12m.GenotypeAD),
+  mEV_2m_Ctrl_vs_sEV_2m_Ctrl  =
+    quote(EVsmEV - EVssEV),
+  mEV_2m_AD_vs_sEV_2m_AD      =
+    quote((EVsmEV - EVssEV) + EVsmEV.GenotypeAD),
+  mEV_12m_Ctrl_vs_sEV_12m_Ctrl=
+    quote((EVsmEV - EVssEV) + EVsmEV.Age12m),
+  mEV_12m_AD_vs_sEV_12m_AD    =
+    quote((EVsmEV - EVssEV) + EVsmEV.Age12m +
+            EVsmEV.GenotypeAD + EVsmEV.Age12m.GenotypeAD),
+  mEV_2m_AD_vs_mEV_2m_Ctrl     =
+    quote(GenotypeAD + EVsmEV.GenotypeAD),
+  mEV_12m_Ctrl_vs_mEV_2m_Ctrl  =
+    quote(Age12m + EVsmEV.Age12m),
+  mEV_12m_AD_vs_mEV_2m_AD      =
+    quote(Age12m + EVsmEV.Age12m + Age12m.GenotypeAD + EVsmEV.Age12m.GenotypeAD),
+  mEV_12m_AD_vs_mEV_12m_Ctrl   =
+    quote(GenotypeAD + EVsmEV.GenotypeAD + Age12m.GenotypeAD + EVsmEV.Age12m.GenotypeAD)
+)
+
+contrastFormula_HumanData = list(
+  EVsmEV_vs_EVssEV =
+    quote(EVsmEV - EVssEV),
+  EVsF1_vs_EVssEV =
+    quote(EVsF1 - EVssEV),
+  EVsF2_vs_EVssEV =
+    quote(EVsF2 - EVssEV), 
+  EVsF3_vs_EVssEV =
+    quote(EVsF3 - EVssEV),
+  EVsF4_vs_EVssEV =
+    quote(EVsF4 - EVssEV),
+  EVsF5_vs_EVssEV =
+    quote(EVsF5 - EVssEV), 
+  EVsF6_vs_EVssEV =
+    quote(EVsF6 - EVssEV),
+  EVsF7_vs_EVssEV =
+    quote(EVsF7 - EVssEV),
+  EVsF8_vs_EVssEV =
+    quote(EVsF8 - EVssEV),
+  EVsF1_vs_EVsmEV =
+    quote(EVsF1 - EVsmEV), 
+  EVsF2_vs_EVsmEV =
+    quote(EVsF2 - EVsmEV),
+  EVsF3_vs_EVsmEV =
+    quote(EVsF3 - EVsmEV),
+  EVsF4_vs_EVsmEV =
+    quote(EVsF4 - EVsmEV),
+  EVsF5_vs_EVsmEV =
+    quote(EVsF5 - EVsmEV),
+  EVsF6_vs_EVsmEV =
+    quote(EVsF6 - EVsmEV),
+  EVsF7_vs_EVsmEV = 
+    quote(EVsF7 - EVsmEV),
+  EVsF8_vs_EVsmEV =
+    quote(EVsF8 - EVsmEV))
+
+# Define the contrasts to perform in each analysis
+contrastList_BrainEVData = c(
+  "sEV_2m_AD_vs_sEV_2m_Ctrl",
+  "sEV_12m_Ctrl_vs_sEV_2m_Ctrl",
+  "sEV_12m_AD_vs_sEV_2m_AD",
+  "sEV_12m_AD_vs_sEV_12m_Ctrl",
+  "mEV_2m_Ctrl_vs_sEV_2m_Ctrl",
+  "mEV_2m_AD_vs_sEV_2m_AD",
+  "mEV_12m_Ctrl_vs_sEV_12m_Ctrl",
+  "mEV_12m_AD_vs_sEV_12m_AD",
+  "mEV_2m_AD_vs_mEV_2m_Ctrl",
+  "mEV_12m_Ctrl_vs_mEV_2m_Ctrl",
+  "mEV_12m_AD_vs_mEV_2m_AD",
+  "mEV_12m_AD_vs_mEV_12m_Ctrl"
+)
+
+contrastList_HumanData = c(
+  "EVsmEV_vs_EVssEV",
+  "EVsF1_vs_EVssEV",
+  "EVsF2_vs_EVssEV",
+  "EVsF3_vs_EVssEV",
+  "EVsF4_vs_EVssEV",
+  "EVsF5_vs_EVssEV",
+  "EVsF6_vs_EVssEV", 
+  "EVsF7_vs_EVssEV",
+  "EVsF8_vs_EVssEV",
+  "EVsF1_vs_EVsmEV",
+  "EVsF2_vs_EVsmEV",
+  "EVsF3_vs_EVsmEV",
+  "EVsF4_vs_EVsmEV",
+  "EVsF5_vs_EVsmEV",
+  "EVsF6_vs_EVsmEV",
+  "EVsF7_vs_EVsmEV",
+  "EVsF8_vs_EVsmEV")
+
+# Define the contrasts to plot in the different analysis
+heatmapHumanContrastPlot = c("EVsF5_vs_EVsmEV_ES",
+                             "EVsF6_vs_EVsmEV_ES",
+                             "EVsF7_vs_EVsmEV_ES",
+                             "EVsF8_vs_EVsmEV_ES")
+
+heatmapBrainEVContrastPlot = c("mEV_2m_AD_vs_mEV_2m_Ctrl_ES",
+                               "mEV_12m_Ctrl_vs_mEV_2m_Ctrl_ES",
+                               "mEV_12m_AD_vs_mEV_2m_AD_ES",
+                               "mEV_12m_AD_vs_mEV_12m_Ctrl_ES")
+
+heatmapHumanContrastPlotENTREZID = c("EVsF5_vs_EVsmEV_ESENTREZID",
+                                     "EVsF6_vs_EVsmEV_ESENTREZID",
+                                     "EVsF7_vs_EVsmEV_ESENTREZID",
+                                     "EVsF8_vs_EVsmEV_ESENTREZID")
+heatmapBrainEVContrastPlotESENTREZID = c("mEV_2m_AD_vs_mEV_2m_Ctrl_ESENTREZID",
+                                         "mEV_12m_Ctrl_vs_mEV_2m_Ctrl_ESENTREZID",
+                                         "mEV_12m_AD_vs_mEV_2m_AD_ESENTREZID",
+                                         "mEV_12m_AD_vs_mEV_12m_Ctrl_ESENTREZID")
+
+# Set the statistical thresholds for the analysis of our data
+alphaSigTresholdSim = 0.05
+fcTresholdSim = 1.5
+
+# Set the statistical thresholds for the analysis of our data and published data
+alphaSigTresholdComb = 0.001
+fcTresholdComb = 5
+```
+
+## Create custom dictionaries for protein IDs not found in databases
+```{r manDict, echo=FALSE}
+# Create custom dictionaries for protein IDs not found
+translatorMsUni2MsEn = data.frame(UNIPROT = c("O08756", "O55126", "O70493",
+                                              "P01631", "P02535", "P08556",
+                                              "P36536", "P42225", "P51912",
+                                              "Q05722", "Q05793", "Q60932",
+                                              "Q91834", "Q6DFV3", "Q6ZQA0",
+                                              "Q8CFI0", "Q8CIE0", "Q8CIZ8",
+                                              "Q99LD4", "Q9JLJ2", "Q9WV80",
+                                              "Q4KML4", "Q69Z98", "Q9JIS7",
+                                              "Q80TT8", "Q9Z2H5", "Q8R313",
+                                              "Q8K012", "O55023" , "P05555",
+                                              "Q66GT5", "Q8BQZ4", "Q60870",
+                                              "P28571", "P15508", "Q8R3T5",
+                                              "Q9WTQ8", "Q9R088", "Q71LX4" ,
+                                              "Q5SSH7"),
+                                  ENTREZID = c("15108", "14467", "55988", "",
+                                               "16661", "18176", "20224",
+                                               "20846", "20514", "12839",
+                                               "15530", "22333", "20648",
+                                               "71435", "235627", "83814",
+                                               "380780", "22371", "209318",
+                                               "56752", "56440", "73112",
+                                               "75770", "54652", "78309",
+                                               "13821", "107371", "214459",
+                                               "55980", "16409", "66461",
+                                               "228850", "13476", "14664",
+                                               "20741", "217517", "53600",
+                                               "57813", "70549", "195018"),
+                                  stringsAsFactors = FALSE)
+
+translatorMs2Hu = data.frame("10090_ID" = c("17711", "16333", "16661", "66039",
+                                            "12867", "14860", "17118", "17836",
+                                            "17999", "15382", "11615", "20195",
+                                            "22004", "12540", "12848", "20320",
+                                            "17174", "11958", "16681", "26931",
+                                            "19012", "19266", "75734", "107260",
+                                            "229279", "13358", "212307",
+                                            "69550", "12864", "71775", "71770", 
+                                            "109754", "68337", "28250", "96875",
+                                            "11426", "11685", "109676",
+                                            "213043", "67126", "68554", "12859",
+                                            "320827", "56066", "54004", "13518",
+                                            "57778", "214459", "53320", "14933",
+                                            "15129", "15289", "15496", "245525",
+                                            "15944", "68239", "53622", "16709",
+                                            "17706", "595136", "74103", "18169",
+                                            "64011", "18537", "27205", "19047",
+                                            "260297", "19231", "69202", "68436",
+                                            "54217", "20091", "235636", "13358",
+                                            "229285", "58212", "20905", "19240",
+                                            "68512", "22003", "73178"),
+                                "9606_ID" = c("4519", "3630", "3858", "80195",
+                                              "1350", "2941", "4082", "5858",
+                                              "4734", "3178", "191", "6282",
+                                              "7169", "998", "9318", "27020",
+                                              "5648", "521", "3849", "5527",
+                                              "8611", "5789", "56947", "55611",
+                                              "220988", "6576", "10982", "684",
+                                              "1345", "", "163", "1727", "1397",
+                                              "6579", "10216", "23499", "",
+                                              "287", "344454", "514",
+                                              "100505876", "1329", "57482",
+                                              "6373",  "1730", "667", "752",
+                                              "54874", "2346", "2710", "3043",
+                                              "3146", "3283", "", "345611", "",
+                                              "3891", "3895", "4509", "4725",
+                                              "10529", "", "4900", "5110",
+                                              "5420", "5501", "80863", "8637",
+                                              "5763", "6164", "25873", "6189",
+                                              "83597", "6576", "23111",
+                                              "222183", "412", "9168", "401505",
+                                              "7168", "8976" ),
+                                "10090" = c("mt-Cyb", "Ins1", "Krt-10",
+                                            "Tmem254", "Cox7c", "Gsta4",
+                                            "Marcks", "Mug1", "Nedd4",
+                                            "Hnrnpa1", "Ahcyl", "S100a11",
+                                            "Tpm2", "Cdc42", "Cops2", "Nptn",
+                                            "Masp1", "Atp5me", "Krt2",
+                                            "Ppp2r5c", "Plpp1", "Ptprd", "Mff",
+                                            "Otub1", "Hnrnpa3", "Slc25a1",
+                                            "Mapre2", "Bst2", "Cox6c", "Inhca",
+                                            "Ap2b1", "Cyb5r3", "Crip2",
+                                            "Slco1a4", "Prg4", "Macf1",
+                                            "Alox12e", "Ank2", "Aox2",
+                                            "Atp5f1e", "Cebpzos", "Cox5b",
+                                            "Cracd", "Cxcl11", "Diaph2", "Dst",
+                                            "Fmnl1", "Fnbp1l", "Folh1", "Gk",
+                                            "Hbb-b1", "Hmgb1", "Hsd3b5", "Hsf3",
+                                            "Irgm1", "Krt42", "Krt85", "Ktn1",
+                                            "mt-Atp8", "Ndufs5", "Nebl",
+                                            "Npy6r", "Nrgn", "Pcmt1", "Podxl",
+                                            "Ppp1cc", "Prrt1", "Ptma", "Ptms",
+                                            "Rpl34", "Rpl36", "Rps3a1", "Rtp3",
+                                            "Slc25a1", "Spart", "Srrm3", "Sts",
+                                            "Tmsb10", "Tomm5", "Tpm1", "Wasl"),
+                                "9606" = c("MT-CYB", "INS", "KRT-10", "TMEM254",
+                                           "COX7C", "GSTA4", "MARCKS", "PZP",
+                                           "NEDD4", "HNRNPA1", "AHCY",
+                                           "S100A11", "TPM2", "CDC42",
+                                            "COPS2", "NPTN", "MASP1", "ATP5ME",
+                                           "KRT2", "PPP2R5C", "PLPP1", "PTPRD",
+                                           "MFF", "OTUB1", "HNRNPA3", "SLC25A1",
+                                           "MAPRE2", "BST2", "COX6C", "",
+                                           "AP2B1", "CYB5R3", "CRIP2",
+                                           "SLCO1A2", "PRG4", "MACF1", "",
+                                           "ANK2", "AOX2P", "ATP5F1E",
+                                           "CEBPZOS", "COX5B", "CRACD",
+                                           "CXCL11", "DIAPH2", "DST", "FMNL1",
+                                           "FNBP1L", "FOLH1", "GK", "HBB",
+                                           "HMGB1", "HSD3B1", "", "IRGM", "",
+                                            "KRT85", "KTN1", "MT-ATP8",
+                                           "NDUFS5", "NEBL", "", "NRGN",
+                                           "PCMT1", "PODXL", "PPP1CC", "PRRT1",
+                                           "PTMA", "PTMS", "RPL34", "RPL36",
+                                           "RPS3A", "RTP3", "SLC25A1", "SPART",
+                                           "SRRM3", "STS", "TMSB10", "TOMM5", 
+                                           "TPM1", "WASL"),
+                                stringsAsFactors = FALSE, check.names = FALSE)
+```
+
+# DATA PREPARATION
+
+## Import and Preprocess the Data
+```{r dataImportation, echo=FALSE}
+# Path for own mouse Brain EVs data
+proteomicsBrainEVData = "./Data/OriginalData/OriginalData_MouseBrainEVs.xlsx"
+
+# Path for published Human EVs data
+proteomicsHumanData = "./Data/OriginalData/PMID_X_HumanEVs.tsv"
+
+# Import the input data sets
+brainEVData = t(read_excel(proteomicsBrainEVData, col_names = FALSE))
+
+humanData = t(read.delim(proteomicsHumanData, header=FALSE))
+
+# Extract the metadata (variables) from the input data sets
+metaProtDataBrainEV = createMetaData(brainEVData, col_range_BrainEVData,
+                                     row_range_BrainEVData,
+                                     sampleNameColumns,
+                                     metaColNames_BrainEVData)
+
+metaProtDataHuman = createMetaData(humanData, col_range_HumanData,
+                                   row_range_HumanData,
+                                   sampleNameColumns,
+                                   metaColNames_HumanData)
+
+# Transform variables to factors and level them
+metaProtDataBrainEV = relevelMetaData(metaProtDataBrainEV,
+                                      relevelVariables_BrainEVData)
+
+metaProtDataHuman = relevelMetaData(metaProtDataHuman,
+                                    relevelVariables_HumanData)
+
+# Generate the expDesign data frames
+expDesignBrainEV = createExpDesign(metaProtDataBrainEV,
+                                   relevelVariables_BrainEVData)
+expDesignHuman = createExpDesign(metaProtDataHuman,
+                                 relevelVariables_HumanData)
+
+# Generate the proteomic data frames
+protDataBrainEV = createProteinData(brainEVData,
+                                    proteinNameColumns, col_range_BrainEVData)
+
+protDataHuman = createProteinData(humanData,
+                                  proteinNameColumns, col_range_HumanData)
+```
+
+# Translate the human protein nomenclature to mouse protein nomenclature in the
+# published human EVs data
+```{r human2mouse, echo=FALSE}
+protDataHuman$Primary.Gene.name = protDataBrainEV$Ids[
+  match(protDataHuman$Ids,protDataBrainEV$Primary.Gene.name)]
+missingProteinsChar = protDataBrainEV$Primary.Gene.name[
+  !protDataBrainEV$Ids %in% protDataHuman$Primary.Gene.name]
+missingProteins = map_lgl(protDataBrainEV$Primary.Gene.name, function(x) {
+  any(map_lgl(missingProteinsChar, ~ grepl(.x, x, fixed = TRUE)))})
+missingProteinsIdx = which(missingProteins %in% TRUE)
+humanDataEntrezNames = unlist(mapIds(org.Hs.eg.db, 
+                                     protDataHuman$Ids, "ENTREZID", "SYMBOL"))
+humanData2mouseNames = homologene(as.numeric(humanDataEntrezNames),
+                                  inTax =9606, outTax = 10090)
+
+for(i in missingProteinsIdx){
+  geneSymbol = protDataBrainEV$Primary.Gene.name[i]
+  idx_match = which(tolower(humanData2mouseNames$'10090') == tolower(geneSymbol))
+  if(length(idx_match) > 0){
+    idx_match = idx_match[1]
+    newSymbol = humanData2mouseNames$`9606`[idx_match]
+    brain_idx = which(protDataHuman$Ids == newSymbol)
+    if(length(brain_idx) > 0){
+      protDataHuman$Primary.Gene.name[brain_idx] = protDataBrainEV$Ids[i]
+    }
+  }
+}
+
+protDataHuman = protDataHuman[ !is.na(protDataHuman$Primary.Gene.name), ]
+protDataHumanSymbols = protDataHuman$Ids
+protDataHuman$Ids = protDataHuman$Primary.Gene.name
+protDataHuman$Primary.Gene.name = protDataHumanSymbols
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "P07759"] = "SERPINA3K"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "P17897"] = "LYZ1"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "P21447"] = "ABCB1A"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "P29391"] = "FTL1"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "P30275"] = "CKMT1"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "P85094"] = "ISOC2A"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "P99024"] = "TUBB5"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "Q00612"] = "G6PDX"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "Q00897"] = "SERPINA1D"
+protDataHuman$Primary.Gene.name[protDataHuman$Ids == "Q9D154"] = "SERPINB1A"
+```
+
+# ENRICHMENT ANALYSIS
+
+## Process the data for hybdrid analysis
+```{r DEPProcessing, echo=FALSE}
+# Format the proteomics data for DEP analysis
+proteins_unique_BrainEV = make_unique(protDataBrainEV, primaryProteinID,
+                                      secondaryProteinID, delim = ";")
+dataColumns_BrainEV = grep(samplesIdentifier, colnames(protDataBrainEV))
+proteins_unique_BrainEV[, dataColumns_BrainEV]= 
+  proteins_unique_BrainEV[, dataColumns_BrainEV] %>%
+  mutate(across(colnames(proteins_unique_BrainEV[, dataColumns_BrainEV]),
+                ~ as.numeric(as.character(.))))
+
+proteins_unique_Human = make_unique(protDataHuman, primaryProteinID, 
+                                    secondaryProteinID, delim = ";")
+dataColumns_Human = grep(samplesIdentifier, colnames(protDataHuman))
+proteins_unique_Human[, dataColumns_Human]= 
+  proteins_unique_Human[, dataColumns_Human] %>%
+  mutate(across(colnames(proteins_unique_Human[, dataColumns_Human]), 
+                ~ as.numeric(as.character(.))))
+```
+
+# In vivo mitoEVs Hybrid Analysis
+```{r invivomitoEVsHA, echo=FALSE}
+set.seed(07021995)
+resultsBrainEV = hybridProteomicsAnalysis(
+  proteins_unique = proteins_unique_BrainEV,
+  dataColumns = dataColumns_BrainEV,
+  expDesign = expDesignBrainEV,
+  relevelVariables = relevelVariables_BrainEVData,
+  formulades = formulades_BrainEVData,
+  contrastFormula = contrastFormula_BrainEVData,
+  contrastList = contrastList_BrainEVData,
+  condition_cols = c("EVs", "Age", "Genotype"),
+  alphaSig = alphaSigTresholdSim,
+  fcThreshold = fcTresholdSim,
+  min_valid_samples = 4
+)
+
+sigProt_BrainEV_DEPPA = resultsBrainEV$SE_Combined
+sigProt_BrainEV_DEP = resultsBrainEV$SE_DEP
+sigProt_PA = resultsBrainEV$SE_PA
+resultsProt_BrainEV_DEPPA = resultsBrainEV$Results_Combined
+resultsProt_BrainEV_DEP = resultsBrainEV$results_DEP
+resultsProt_BrainEV_PA = resultsBrainEV$Results_PA
+write.csv(resultsProt_BrainEV_DEPPA, paste0(outputDirBrainEV,
+                                            "statsData_Combined.csv"))
+write.csv(resultsProt_BrainEV_DEP, paste0(outputDirBrainEV,
+                                          "statsData_DEP.csv"))
+write.csv(resultsProt_BrainEV_PA, paste0(outputDirBrainEV,
+                                         "statsData_PA.csv"))
+```
+
+# In vivo mitoEVs & human Hybrid Analysis
+```{r invivomitoEVsHumanHA, echo=FALSE}
+set.seed(07021995)
+resultsHumanEV = hybridMixedProteomicsAnalysis(
+  proteins_unique_1 = proteins_unique_Human,
+  proteins_unique_2 = proteins_unique_BrainEV,
+  dataColumns_1 = dataColumns_Human,
+  dataColumns_2 = dataColumns_BrainEV,
+  expDesign_1 = expDesignHuman,
+  expDesign_2 = expDesignBrainEV,
+  relevelVariables_1 = relevelVariables_HumanData,
+  relevelVariables_2 = relevelVariables_BrainEVData, 
+  formulades = formulades_HumanData,
+  contrastFormula = contrastFormula_HumanData,
+  contrastList = contrastList_HumanData,
+  condition_cols = c("EVs", "Age", "Genotype"),
+  alphaSig = alphaSigTresholdComb,
+  fcThreshold = fcTresholdComb,
+  min_valid_samples = 6
+)
+
+sigProt_HumanEV_DEPPA = resultsHumanEV$SE_Combined
+sigProt_HumanEV_DEP = resultsHumanEV$SE_DEP
+sigProt_HumanEV_PA = resultsHumanEV$SE_PA
+resultsProt_HumanEV_DEPPA = resultsHumanEV$Results_Combined
+resultsProt_HumanEV_DEP = resultsHumanEV$Results_DEP
+resultsProt_HumanEV_PA = resultsHumanEV$Results_PA
+write.csv(resultsProt_HumanEV_DEPPA, paste0(outputDirHuman,
+                                            "statsData_Combined.csv"))
+write.csv(resultsProt_HumanEV_DEP, paste0(outputDirHuman,
+                                          "statsData_DEP.csv"))
+write.csv(resultsProt_HumanEV_PA, paste0(outputDirHuman,
+                                         "statsData_PA.csv"))
+```
+## RAW INTENSITIES SE
+```{r rawIntensities, echo=FALSE}
+valid_proteins_brain <- rownames(sigProt_BrainEV_DEPPA)
+raw_matrix_brain <- proteins_unique_BrainEV[match(valid_proteins_brain,
+                                                  proteins_unique_BrainEV$name),
+                                            dataColumns_BrainEV]
+raw_matrix_brain <- as.matrix(raw_matrix_brain)
+rownames(raw_matrix_brain) <- valid_proteins_brain
+colnames(raw_matrix_brain) <- colnames(sigProt_BrainEV_DEPPA)
+
+sigProt_BrainEV_RAW <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(raw = raw_matrix_brain),
+  colData = colData(sigProt_BrainEV_DEPPA)
+)
+
+valid_proteins_combined <- rownames(sigProt_HumanEV_DEPPA)
+
+raw_mouse <- proteins_unique_BrainEV[match(valid_proteins_combined,
+                                           proteins_unique_BrainEV$name),
+                                     dataColumns_BrainEV]
+raw_human <- proteins_unique_Human[match(valid_proteins_combined,
+                                         proteins_unique_Human$name),
+                                   dataColumns_Human]
+
+raw_matrix_combined <- cbind(raw_human, raw_mouse)
+raw_matrix_combined <- as.matrix(raw_matrix_combined)
+rownames(raw_matrix_combined) <- valid_proteins_combined
+
+raw_matrix_combined <- raw_matrix_combined[, colnames(sigProt_HumanEV_DEPPA)]
+
+sigProt_HumanEV_RAW <- SummarizedExperiment::SummarizedExperiment(
+  assays = list(raw = raw_matrix_combined),
+  colData = colData(sigProt_HumanEV_DEPPA)
+)
+```
+
+# RESULTS OF THE ENRICHMENT ANALYSIS
+
+## Generate Donut Plot
+```{r plotStyle, echo=FALSE}
+generate_donut_plots_per_contrast(
+  results_DEP = resultsProt_BrainEV_DEP,
+  results_PA = resultsProt_BrainEV_PA,
+  contrastList = contrastList_BrainEVData,
+  outputDir = paste0(outputDirBrainEV,"/DonutPlot")
+)
+
+generate_donut_plots_per_contrast(
+  results_DEP = resultsProt_HumanEV_DEP,
+  results_PA = resultsProt_HumanEV_PA,
+  contrastList = contrastList_HumanData,
+  outputDir = paste0(outputDirHuman, "/DonutPlot")
+)
+```
+
+## Generate and save PCA and PLSDA 3D
+```{r PCA, echo=FALSE}
+# InVivoMitoEVs
+dir2save = paste0(outputDirBrainEV, "PCA_ellipses.tiff")
+tiff(filename = dir2save, width = 5000, height = 5000, res = 300)
+
+legend_order = c("WT_sEVs_2m", "WT_sEVs_12m", "APPKI_sEVs_2m", "APPKI_sEVs_12m",
+                 "WT_mitoEVs_2m", "WT_mitoEVs_12m", "APPKI_mitoEVs_2m", "APPKI_mitoEVs_12m")
+
+legend_labels = c(
+  expression("WT sEVs 2m"),
+  expression("WT sEVs 12m"),
+  expression("APP"^"KI"~"sEVs 2m"),
+  expression("APP"^"KI"~"sEVs 12m"),
+  expression("WT mitoEVs 2m"),
+  expression("WT mitoEVs 12m"),
+  expression("APP"^"KI"~"mitoEVs 2m"),
+  expression("APP"^"KI"~"mitoEVs 12m")
+)
+
+BrainEVPCA = plot_pca(sigProt_BrainEV_DEPPA, x = 1, y = 2, n = 2338,
+                      indicate = "Group", point_size = 15) +
+  stat_ellipse(aes(fill = Group), geom = "polygon", alpha = 0.2,
+               level = 0.95, color = NA) +
+  scale_color_manual(values=c("#5EFA9F", "#198B38","#FFB3E6","#C40049",
+    "#79ECFB", "#1EA7C2", "#FFFF77","#A3A352"), breaks = legend_order, 
+    labels = legend_labels) +
+  scale_fill_manual(values=c("#5EFA9F", "#198B38","#FFB3E6","#C40049",
+    "#79ECFB", "#1EA7C2", "#FFFF77","#A3A352"), breaks = legend_order,
+    labels = legend_labels) +
+  theme_void() +
+  labs(colour=NULL,fill = NULL, title="PCA Brain-derived EVs") +
+  theme(
+    plot.title   = element_text(size = 50, face = "bold", hjust = 0.5),
+    legend.box.margin = margin(20, 80, 0, 0),
+    legend.box.spacing = unit(1, "cm"),
+    axis.title.x = element_text(size = 40, margin = margin(t = 20)),
+    axis.title.y = element_text(size = 40, angle = 90, margin = margin(r = 20)),
+    axis.text    = element_text(size = 35),
+    legend.position = "top",
+    legend.text  = element_text(size = 18),
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 5),
+    plot.margin = margin(30, 30, 30, 30)
+  ) +
+  guides(colour = guide_legend(
+    ncol = 4, byrow = TRUE,
+    label.theme = element_text(size = 29, margin = margin(r = 25)), 
+    keywidth = unit(1, "cm") 
+  ), fill = "none") +
+  coord_fixed(ratio = 0.9) 
+
+print(BrainEVPCA)
+dev.off()
+
+XBrainEV = t(assay(sigProt_BrainEV_DEPPA))
+YBrainEV = factor(colData(sigProt_BrainEV_DEPPA)$Group)
+
+colorsBrainEV = c("#2E6F40","#9A0F40","#4F0433", "#9AA4c4",
+                  "#0dc4c4", "#FF876F", "#AAAA6F", "#9AF0BB")
+names(colorsBrainEV) = levels(YBrainEV)
+
+plsdaBrainEV = mixOmics::plsda(XBrainEV, YBrainEV, ncomp = 3)
+
+rgl::open3d()
+mixOmics::plotIndiv(plsdaBrainEV,
+          comp = c(1,2,3),
+          group = YBrainEV,
+          ind.names = FALSE,
+          legend = FALSE,
+          style = "3d",
+          col = colorsBrainEV)
+
+rgl::legend3d("bottomright",
+         legend = levels(YBrainEV),
+         pch = 16,
+         col = colorsBrainEV,
+         cex = 1.5,
+         text.font = 2)
+
+rgl::view3d(theta = 10, phi = -20, fov = -25)
+
+rgl::rgl.postscript(file.path(outputDirBrainEV, "PLSDA3D.pdf"), "pdf")
+htmlwidgets::saveWidget(rgl::rglwidget(), file.path(outputDirBrainEV,
+                                                    "PLSDA3D.html"),
+                        selfcontained = TRUE)
+rgl::close3d()
+
+# InVivoMitoEVs&Human
+dir2save = paste0(outputDirHuman, "PCA.tiff")
+tiff(filename = dir2save, width = 4500, height = 4250, res = 300)
+
+legend_order_Human = c("WT_sEVs_2m",
+                       "WT_sEVs_12m",
+                       "APPKI_sEVs_2m",
+                       "APPKI_sEVs_12m",
+                       "WT_mitoEVs_2m",
+                       "WT_mitoEVs_12m",
+                       "APPKI_mitoEVs_2m",
+                       "APPKI_mitoEVs_12m",
+                       "AD_F1_12m",
+                       "AD_F2_12m",
+                       "AD_F3_12m",
+                       "AD_F4_12m", 
+                       "AD_F5_12m",
+                       "AD_F6_12m",
+                       "AD_F7_12m",
+                       "AD_F8_12m")
+
+legend_labels_Human = c(
+  expression("WT sEVs 2m"),
+  expression("WT sEVs 12m"),
+  expression("APP"^"KI"~"sEVs 2m"),
+  expression("APP"^"KI"~"sEVs 12m"),
+  expression("WT mitoEVs 2m"),
+  expression("WT mitoEVs 12m"),
+  expression("APP"^"KI"~"mitoEVs 2m"),
+  expression("APP"^"KI"~"mitoEVs 12m"),
+  "AD F1",
+  "AD F2",
+  "AD F3",
+  "AD F4",
+  "AD F5",
+  "AD F6",
+  "AD F7",
+  "AD F8"
+)
+
+HumanPCA = plot_pca(sigProt_HumanEV_DEPPA, x = 1, y = 2, n = 2338,
+                    indicate = "Group", point_size = 15) +
+    stat_ellipse(aes(fill = Group), geom = "polygon", alpha = 0.2,
+                 level = 0.95, color = NA) +
+  scale_color_manual(values=c("#5EFA9F", "#198B38","#FFB3E6","#C40049",
+    "#79ECFB", "#1EA7C2", "#FFFF77","#A3A352", "#F2E0E0", "#E0BDBD",
+    "#CD9A9A", "#BA7777", "#A66666", "#7C4C4C", "#533333", "#291919"),
+    breaks = legend_order_Human, 
+    labels = legend_labels_Human) +
+  scale_fill_manual(values=c("#5EFA9F", "#198B38","#FFB3E6","#C40049",
+    "#79ECFB", "#1EA7C2", "#FFFF77","#A3A352", "#F2E0E0", "#E0BDBD",
+    "#CD9A9A", "#BA7777", "#A66666", "#7C4C4C", "#533333", "#291919"),
+    breaks = legend_order_Human,
+    labels = legend_labels_Human) +
+  theme_void() +
+  labs(colour=NULL, title="PCA Human and Mouse Brain-derived EVs") +
+  theme(
+    plot.title   = element_text(size = 30, face = "bold", hjust = 0.5),
+    legend.box.margin = margin(20, 80, 0, 0),
+    legend.box.spacing = unit(1, "cm"),
+    axis.title.x = element_text(size = 40, margin = margin(t = 20)),
+    axis.title.y = element_text(size = 40, angle = 90, margin = margin(r = 20)),
+    axis.text    = element_text(size = 35),
+    legend.position = "top",
+    legend.text  = element_text(size = 18), 
+    panel.border = element_rect(color = "black", fill = NA, linewidth = 5),
+    plot.margin = margin(30, 30, 30,30)
+  ) +
+  guides(colour = guide_legend(
+    ncol = 4, byrow = TRUE,
+    label.theme = element_text(size = 24, margin = margin(r = 25)), 
+    keywidth = unit(1, "cm") 
+  ), fill = "none") +
+  coord_fixed(ratio = 0.9) 
+
+print(HumanPCA)
+dev.off()
+
+XHumanEV = t(assay(sigProt_HumanEV_DEPPA))
+YHumanEV = factor(colData(sigProt_HumanEV_DEPPA)$Group)
+
+colorsHumanEV = c("#2E6F40","#9A0F40","#4F0433", "#9AA4c4",
+                  "#0dc4c4", "#FF876F", "#AAAA6F", "#9AF0BB",
+                  "#FAAA6D", "#FFF66D","#04B986", "#A66666",
+                  "#FDDA6D", "#DFF66D","#54B986", "#D55566")
+names(colorsHumanEV) = levels(YHumanEV)
+
+plsdaHumanEV = mixOmics::plsda(XHumanEV, YHumanEV, ncomp = 3)
+
+rgl::open3d() 
+mixOmics::plotIndiv(plsdaHumanEV,
+          comp = c(1,2,3),
+          group = YHumanEV,
+          ind.names = FALSE,
+          legend = FALSE,
+          style = "3d",
+          col = colorsHumanEV)
+
+rgl::legend3d("bottomright",
+         legend = levels(YHumanEV),
+         pch = 16,
+         col = colorsHumanEV,
+         cex = 1.2,
+         text.font = 2)
+
+rgl::view3d(theta = 10, phi = -20, fov = -25)
+
+rgl::rgl.postscript(file.path(outputDirHuman, "PLSDA3D.pdf"), "pdf")
+htmlwidgets::saveWidget(rgl::rglwidget(), file.path(outputDirHuman,
+                                                    "PLSDA3D.html"),
+                        selfcontained = TRUE)
+rgl::close3d()
+```
+## Generate and save volcano plot
+```{r VolcanoPlot, echo=FALSE}
+# InVivoMitoEVs
+for (z in contrastList_BrainEVData){
+  reflabel = sub("(.*?)_vs_.*", "\\1", z)
+  contrastlabel = sub(".*_vs_(.*)", "\\1", z)
+
+  dir2save = paste0(outputDirBrainEV,"VolcanoPlot/Volcano_", z, ".tiff")
+  tiff(filename = dir2save, width = 4500, height = 4250, res = 300)
+  
+  volcanoPlot = plot_volcano(sigProt_BrainEV_DEPPA, contrast = z, label_size = 8,
+                             add_names = TRUE, plot = TRUE, adjusted = TRUE)
+  
+  volcanoPlot = volcanoPlot +
+    labs(title="Volcano plot") +
+    annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf,
+             fill= "white", alpha = 0.08) +
+    annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf,
+             fill = "white", alpha = 0.08) +
+    scale_color_manual(values = c(
+      "Not Significant" = "darkgray",
+      "DEP Down"        = "darkcyan",   
+      "DEP Up"          = "#D97959",  
+      "PA Down"         = "#4B0082",   
+      "PA Up"           = "#800000"   
+    ))
+  
+  print(volcanoPlot)
+  dev.off()
+}
+
+# InVivoMitoEVs&Human
+for (z in contrastList_HumanData){
+  reflabel = sub("(.*?)_vs_.*", "\\1", z)
+  contrastlabel = sub(".*_vs_(.*)", "\\1", z)
+  
+  dir2save = paste0(outputDirHuman,"VolcanoPlot/Volcano_", z, ".tiff")
+  tiff(filename = dir2save, width = 4500, height = 4250, res = 300)
+  
+  volcanoPlot = plot_volcano(sigProt_HumanEV_DEPPA, contrast = z, label_size = 1,
+                             add_names = FALSE, plot = TRUE, adjusted = TRUE) +
+    labs(title="Volcano plot") +
+    annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf,
+             fill= "white", alpha = 0.08) +
+    annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf,
+             fill = "white", alpha = 0.08) +
+    scale_color_manual(values = c(
+      "Not Significant" = "darkgray",
+      "DEP Down"        = "darkcyan",   
+      "DEP Up"          = "#D97959",  
+      "PA Down"         = "#4B0082",   
+      "PA Up"           = "#800000" 
+    ))
+  print(volcanoPlot)
+  dev.off()
+}
+```
+## Generate and save heatmap
+```{r heatmap, echo=FALSE}
+# InVivoMitoEVs
+pca_colors_Brain = c(
+  "WT_sEVs_2m"        = "#5EFA9F", 
+  "WT_sEVs_12m"       = "#198B38",
+  "APPKI_sEVs_2m"     = "#FFB3E6", 
+  "APPKI_sEVs_12m"    = "#C40049",
+  "WT_mitoEVs_2m"     = "#79ECFB", 
+  "WT_mitoEVs_12m"    = "#1EA7C2",
+  "APPKI_mitoEVs_2m"  = "#FFFF77", 
+  "APPKI_mitoEVs_12m" = "#A3A352"
+)
+
+pca_labels_Brain = c(
+  "WT_sEVs_2m"        = expression("WT sEVs 2m"),
+  "WT_sEVs_12m"       = expression("WT sEVs 12m"),
+  "APPKI_sEVs_2m"     = expression("APP"^"KI"~"sEVs 2m"),
+  "APPKI_sEVs_12m"    = expression("APP"^"KI"~"sEVs 12m"),
+  "WT_mitoEVs_2m"     = expression("WT mitoEVs 2m"),
+  "WT_mitoEVs_12m"    = expression("WT mitoEVs 12m"),
+  "APPKI_mitoEVs_2m"  = expression("APP"^"KI"~"mitoEVs 2m"),
+  "APPKI_mitoEVs_12m" = expression("APP"^"KI"~"mitoEVs 12m")
+)
+
+
+colHeatMap = colorRampPalette(c("#2E6F40", "#69C967", "#FEF6A7",
+                                "#E34E9A", "#4F0433"))(50)
+colLegend  = circlize::colorRamp2(
+  seq(-2, 2, length.out = length(colHeatMap)),
+  colHeatMap
+)
+
+dir2save = paste0(outputDirBrainEV, "Heatmap_legend.tiff")
+tiff(filename = dir2save, width = 4500, height = 4500, res = 300)
+
+set.seed(07021995)
+heatmap_BrainEV = plot_heatmap(
+  sigProt_BrainEV_DEPPA, 
+  type = "centered",
+  kmeans = TRUE, k = 6, 
+  col_limit = 140,
+  col = colLegend,
+  show_row_names = FALSE, 
+  row_font_size = 14,
+  col_font_size = 14, 
+  indicate = c("Group"),
+  plot = FALSE, 
+  show_row_dend = FALSE,
+  seed = 07021995,
+  custom_anno_cols = list(Group = pca_colors_Brain), 
+  custom_anno_labels = list(Group = pca_labels_Brain)
+) 
+
+legendHeatmap_BrainEV = ComplexHeatmap::Legend(
+  title = NULL,
+  col_fun = colLegend,
+  at = c(-2, -1, 0, 1, 2),
+  labels_gp = grid::gpar(fontsize = 18),
+  title_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+  direction = "horizontal",
+  grid_height = unit(8, "mm"),
+  grid_width  = unit(200, "mm")
+)
+
+separatorLeg = ComplexHeatmap::Legend(title = " ",
+                                   at = " ",
+                                   legend_gp = grid::gpar(fill = "white",
+                                                          col = "white"),
+                                   border = "white",
+                                   grid_height = unit(1, "cm"),
+                                   grid_width = unit(0, "cm"))
+
+heatmap_BrainEV_Print <- ComplexHeatmap::draw(heatmap_BrainEV, 
+                                              show_heatmap_legend = FALSE,
+                                              show_annotation_legend = TRUE,
+                                              annotation_legend_list = list(separatorLeg, legendHeatmap_BrainEV),
+                                              annotation_legend_side = "left")
+dev.off()
+
+clusterOutputDir <- paste0(outputDirBrainEV, "Cluster_Heatmaps_legend/")
+if (!dir.exists(clusterOutputDir)) dir.create(clusterOutputDir)
+
+is_sig <- rowData(sigProt_BrainEV_DEPPA, use.names = FALSE)$significant
+filtered_BrainEV <- sigProt_BrainEV_DEPPA[is_sig, ]
+
+clusters <- ComplexHeatmap::row_order(heatmap_BrainEV_Print)
+cluster_df <- data.frame(Protein = character(), Cluster = integer(),
+                         stringsAsFactors = FALSE)
+
+for (i in seq_along(clusters)) {
+  cluster_idx <- clusters[[i]]
+  cluster_dep <- filtered_BrainEV[cluster_idx, ]
+  
+  if (i == 3) {
+    prot_names <- rowData(cluster_dep)$name
+    keep_idx <- !grepl("^KRT", prot_names, ignore.case = TRUE)
+    cluster_dep <- cluster_dep[keep_idx, ]
+  }
+  
+  cluster_df <- rbind(cluster_df, data.frame(Protein = rowData(cluster_dep)$name,
+                                             Cluster = i))
+  
+  dynamic_height <- max(3000, length(cluster_idx) * 60) 
+  dir2save_cluster <- paste0(clusterOutputDir, "Heatmap_Cluster_", i, ".tiff")
+  tiff(filename = dir2save_cluster, width = 4500, height = dynamic_height,
+       res = 300)
+  
+  heatmap_sub <- plot_heatmap(
+    cluster_dep, 
+    type = "centered",
+    kmeans = FALSE,
+    col_limit = 140, 
+    col = colLegend, 
+    show_row_names = TRUE,
+    row_font_size = 14,
+    col_font_size = 14, 
+    indicate = c("Group"),
+    plot = FALSE, 
+    show_row_dend = FALSE,
+    seed = 07021995,
+    custom_anno_cols = list(Group = pca_colors_Brain), 
+    custom_anno_labels = list(Group = pca_labels_Brain)
+  ) 
+  
+  legendHeatmap_BrainEV = ComplexHeatmap::Legend(
+    title = NULL,
+    col_fun = colLegend,
+    at = c(-2, -1, 0, 1, 2),
+    labels_gp = grid::gpar(fontsize = 18),
+    title_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+    direction = "horizontal",
+    grid_height = unit(8, "mm"),
+    grid_width  = unit(200, "mm")
+  )
+
+  separatorLeg = ComplexHeatmap::Legend(title = " ",
+                                    at = " ",
+                                    legend_gp = grid::gpar(fill = "white",
+                                                            col = "white"),
+                                    border = "white",
+                                    grid_height = unit(1, "cm"),
+                                    grid_width = unit(0, "cm"))
+  
+  ComplexHeatmap::draw(heatmap_sub, 
+                       show_heatmap_legend = FALSE,
+                       annotation_legend_list = list(separatorLeg, legendHeatmap_BrainEV),
+                       annotation_legend_side = "left")
+  dev.off()
+}
+
+lista_clusters_BrainEV<-lapply(ComplexHeatmap::row_order(heatmap_BrainEV_Print),
+                                 function(idx) {
+  rownames(filtered_BrainEV)[idx]
+})
+names(lista_clusters_BrainEV) <- paste0("Cluster_",
+                                        seq_along(lista_clusters_BrainEV))
+
+write.csv(cluster_df, paste0(clusterOutputDir, "Proteins_by_Cluster.csv"),
+          row.names = FALSE)
+
+# InVivoMitoEVs&Human
+dir2save = paste0(outputDirHuman, "Heatmap.tiff")
+tiff(filename = dir2save, width = 5500, height = 4500, res = 300)
+
+
+colHeatMap = colorRampPalette(c("#2E6F40", "#69C967", "#FEF6A7",
+                                "#E34E9A", "#4F0433"))(50)
+colLegendHuman  = circlize::colorRamp2(
+  seq(-3, 3, length.out = length(colHeatMap)),
+  colHeatMap
+)
+
+pca_colors_Human = c(
+  "WT_sEVs_2m"        = "#5EFA9F", 
+  "WT_sEVs_12m"       = "#198B38",
+  "APPKI_sEVs_2m"     = "#FFB3E6", 
+  "APPKI_sEVs_12m"    = "#C40049",
+  "WT_mitoEVs_2m"     = "#79ECFB", 
+  "WT_mitoEVs_12m"    = "#1EA7C2",
+  "APPKI_mitoEVs_2m"  = "#FFFF77", 
+  "APPKI_mitoEVs_12m" = "#A3A352",
+  "AD_F1_12m"         = "#F2E0E0",
+  "AD_F2_12m"         = "#E0BDBD",
+  "AD_F3_12m"         = "#CD9A9A",
+  "AD_F4_12m"         = "#BA7777",
+  "AD_F5_12m"         = "#A66666",
+  "AD_F6_12m"         = "#7C4C4C",
+  "AD_F7_12m"         = "#533333",
+  "AD_F8_12m"         = "#291919"
+)
+
+pca_labels_Human = c(
+  "WT_sEVs_2m"        = expression("WT sEVs 2m"),
+  "WT_sEVs_12m"       = expression("WT sEVs 12m"),
+  "APPKI_sEVs_2m"     = expression("APP"^"KI"~"sEVs 2m"),
+  "APPKI_sEVs_12m"    = expression("APP"^"KI"~"sEVs 12m"),
+  "WT_mitoEVs_2m"     = expression("WT mitoEVs 2m"),
+  "WT_mitoEVs_12m"    = expression("WT mitoEVs 12m"),
+  "APPKI_mitoEVs_2m"  = expression("APP"^"KI"~"mitoEVs 2m"),
+  "APPKI_mitoEVs_12m" = expression("APP"^"KI"~"mitoEVs 12m"),
+  "AD_F1_12m"         = "AD F1",
+  "AD_F2_12m"         = "AD F2",
+  "AD_F3_12m"         = "AD F3",
+  "AD_F4_12m"         = "AD F4",
+  "AD_F5_12m"         = "AD F5",
+  "AD_F6_12m"         = "AD F6",
+  "AD_F7_12m"         = "AD F7",
+  "AD_F8_12m"         = "AD F8"
+)
+
+set.seed(07021995)
+heatmap_HumanEV = plot_heatmap(
+  sigProt_HumanEV_DEPPA, 
+  type = "centered",
+  kmeans = TRUE, k = 8, 
+  col_limit = 300,
+  col = colLegendHuman, 
+  show_row_names = FALSE, 
+  row_font_size = 9,
+  col_font_size = 12, 
+  indicate = c("Group"),
+  plot = FALSE, 
+  show_row_dend = FALSE,
+  seed = 07021995,
+  custom_anno_cols = list(Group = pca_colors_Human), 
+  custom_anno_labels = list(Group = pca_labels_Human)
+) 
+
+legendHeatmap_HumanEV = ComplexHeatmap::Legend(
+  title = NULL, 
+  col_fun = colLegendHuman,
+  at = c(-3, -1.5, 0, 1.5, 3),
+  labels_gp = grid::gpar(fontsize = 18),
+  title_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+  direction = "horizontal",
+  grid_height = unit(8, "mm"),
+  grid_width  = unit(15, "mm")
+)
+
+separatorLeg = ComplexHeatmap::Legend(title = " ",
+                                   at = " ",
+                                   legend_gp = grid::gpar(fill = "white",
+                                                          col = "white"),
+                                   border = "white",
+                                   grid_height = unit(1, "cm"),
+                                   grid_width = unit(0, "cm"))
+
+heatmap_HumanEV_Print <- ComplexHeatmap::draw(heatmap_HumanEV, 
+                                              show_heatmap_legend = FALSE,
+                                              show_annotation_legend = TRUE, 
+                                              annotation_legend_list =
+                                                list(separatorLeg, legendHeatmap_HumanEV), 
+                                              annotation_legend_side = "left")
+dev.off()
+
+clusterOutputDir_Human <- paste0(outputDirHuman, "Cluster_Heatmaps/")
+if (!dir.exists(clusterOutputDir_Human)) dir.create(clusterOutputDir_Human)
+
+is_sig_human <- rowData(sigProt_HumanEV_DEPPA, use.names = FALSE)$significant
+filtered_HumanEV <- sigProt_HumanEV_DEPPA[is_sig_human, ]
+
+clusters_human <- ComplexHeatmap::row_order(heatmap_HumanEV_Print)
+cluster_df_human <- data.frame(Protein = character(), Cluster = integer(),
+                               stringsAsFactors = FALSE)
+
+for (i in seq_along(clusters_human)) {
+  cluster_idx <- clusters_human[[i]]
+  cluster_dep <- filtered_HumanEV[cluster_idx, ]
+  cluster_df_human <- rbind(cluster_df_human,
+                            data.frame(Protein = rowData(cluster_dep)$name,
+                                       Cluster = i))
+  
+  dynamic_height <- max(2000, length(cluster_idx) * 40) 
+  dir2save_cluster <- paste0(clusterOutputDir_Human,
+                             "Heatmap_Cluster_", i, ".tiff")
+  tiff(filename = dir2save_cluster, width = 5000,
+       height = dynamic_height, res = 300)
+  
+  heatmap_sub <- plot_heatmap(
+    cluster_dep, 
+    type = "centered",
+    kmeans = FALSE,         
+    col_limit = 300,        
+    col = colLegendHuman,       
+    show_row_names = TRUE,  
+    row_font_size = 9,     
+    col_font_size = 9, 
+    indicate = c("Group"),
+    plot = FALSE, 
+    show_row_dend = FALSE,
+    seed = 07021995,
+    custom_anno_cols = list(Group = pca_colors_Human), 
+    custom_anno_labels = list(Group = pca_labels_Human)    
+  ) 
+  
+  legendHeatmap_HumanEVSub = ComplexHeatmap::Legend(
+    title = NULL,
+    col_fun = colLegend,
+    at = c(-3, -1.5, 0, 1.5, 3),
+    labels_gp = grid::gpar(fontsize = 18),
+    title_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+    direction = "horizontal",
+    grid_height = unit(8, "mm"),
+    grid_width  = unit(200, "mm")
+  )
+
+    separatorLeg = ComplexHeatmap::Legend(title = " ",
+                                    at = " ",
+                                    legend_gp = grid::gpar(fill = "white",
+                                                            col = "white"),
+                                    border = "white",
+                                    grid_height = unit(1, "cm"),
+                                    grid_width = unit(0, "cm"))
+  
+  ComplexHeatmap::draw(heatmap_sub, 
+                       show_heatmap_legend = FALSE, 
+                       annotation_legend_list = list(separatorLeg, legendHeatmap_HumanEVSub), 
+                       annotation_legend_side = "left")
+  dev.off()
+}
+
+lista_clusters_HumanEV<-lapply(ComplexHeatmap::row_order(heatmap_HumanEV_Print),
+                                 function(idx) {
+  rownames(filtered_HumanEV)[idx]
+})
+names(lista_clusters_HumanEV) <- paste0("Cluster_",
+                                        seq_along(lista_clusters_HumanEV))
+
+write.csv(cluster_df_human, paste0(clusterOutputDir_Human, 
+                                   "Proteins_by_Cluster.csv"),
+          row.names = FALSE)
+```
+## Generate Metaclusters and Euler Plot
+```{r metaclusters, echo=FALSE}
+# mEVMarkers
+mEVMarkers = list(hmEVANDmmEVs = unique(c(lista_clusters_HumanEV$Cluster_7)),
+                  mmEVsNOTmsEVs  = lista_clusters_BrainEV$Cluster_6)
+
+GeneralmEVMarkersResult = Reduce(intersect, mEVMarkers)
+
+write.csv(data.frame(Protein = GeneralmEVMarkersResult), 
+          paste0(outputDirMetaAnalysis, "mEV_Intersected_Markers_prueba.csv"), 
+          row.names = FALSE)
+
+fitEulermEVMarkers = euler(mEVMarkers)
+
+dir2save = paste0(outputDirMetaAnalysis, "EulerPlot_mEVMarkers_prueba.tiff")
+tiff(filename = dir2save, width = 4500, height = 4500, res = 300)
+
+euler_plot <- plot(fitEulermEVMarkers,
+                   fills      = list(fill = c("#A80022", "#005C9A"),
+                                     alpha = 0.7),
+                   edges      = list(col = "black", lwd = 3),
+                   quantities = list(cex = 6, font = 2), 
+                   legend     = list(side = "bottom", cex = 5,
+                                     ncol = 2,
+                                     labels = c("  Human AND mouse mitoEVs cluster",
+                                                "  Mouse mitoEVs NOT sEVs cluster"),
+                                     vgap = grid::unit(2, "cm"))
+)
+print(euler_plot)
+dev.off()
+
+# mEVADMarkers
+mEVASMarkers = list(hmEVANDmmEVs = unique(c(lista_clusters_HumanEV$Cluster_6,
+                                            lista_clusters_HumanEV$Cluster_7)),
+                  mmEVsNOTmsEVs  = unique(c(lista_clusters_BrainEV$Cluster_2,
+                                            lista_clusters_BrainEV$Cluster_3)))
+
+GeneralASmEVMarkersResult = Reduce(intersect, mEVASMarkers)
+
+write.csv(data.frame(Protein = GeneralASmEVMarkersResult), 
+          paste0(outputDirMetaAnalysis, "mEV_Intersected_Markers_AD.csv"), 
+          row.names = FALSE)
+
+fitASEulermEVMarkers = euler(mEVASMarkers)
+
+dir2save = paste0(outputDirMetaAnalysis, "EulerPlot_mEVMarkers_AD.tiff")
+tiff(filename = dir2save, width = 4500, height = 4500, res = 300)
+
+euler_plot <- plot(fitASEulermEVMarkers,
+                   fills      = list(fill = c("#69C967", "#E34E9A"),
+                                     alpha = 0.7),
+                   edges      = list(col = "black", lwd = 3),
+                   quantities = list(cex = 6, font = 2), 
+                   legend     = list(side = "bottom", cex = 5,
+                                     ncol = 2,
+                                     labels = c("  Human AND mouse mitoEVs cluster",
+                                                "  Mouse mitoEVs NOT sEVs cluster"),
+                                     vgap = grid::unit(2, "cm"))
+)
+print(euler_plot)
+dev.off()
+
+
+
+# Clusters
+
+lista_clusters_BrainEV$Cluster_3 <- grep(pattern = "^KRT",
+                                         x = lista_clusters_BrainEV$Cluster_3,
+                                         invert = TRUE, value = TRUE)
+
+metaDataSets <- list(
+  GeneralmEVMarkers = GeneralmEVMarkersResult,
+  GeneralADmEVMarkers = GeneralASmEVMarkersResult, 
+  BrainEV_Cluster_1 = lista_clusters_BrainEV$Cluster_1,
+  BrainEV_Cluster_2 = lista_clusters_BrainEV$Cluster_2,
+  BrainEV_Cluster_3 = lista_clusters_BrainEV$Cluster_3,
+  BrainEV_Cluster_4 = lista_clusters_BrainEV$Cluster_4,
+  BrainEV_Cluster_5 = lista_clusters_BrainEV$Cluster_5,
+  BrainEV_Cluster_6 = lista_clusters_BrainEV$Cluster_6,
+  HumanEV_Cluster_6 = lista_clusters_HumanEV$Cluster_6
+)
+for (dataset_name in names(metaDataSets)) {
+    dataTemp <- metaDataSets[[dataset_name]]
+    write.csv(dataTemp, 
+              file = paste0(outputDirMetaAnalysis, "GeneLists/",
+                            dataset_name, ".csv"),
+              row.names = FALSE)
+} 
+```
+
+## GENERATE Enrichment Score Ranking and translate proteins
+```{r ESRanking, echo=FALSE}
+contrastES_BrainEV = calculateES(resultsProt_BrainEV_DEPPA,
+                                 ID, contrastList_BrainEVData)
+contrastES_Human = calculateES(resultsProt_HumanEV_DEPPA,
+                               ID, contrastList_HumanData)
+
+contrastEntrez_BrainEV = translate_ID(resultsProt_BrainEV_DEPPA$ID,
+                                      "UNIPROT",
+                                      "ENTREZID",
+                                      species_db = org.Mm.eg.db,
+                                      manual_map = translatorMsUni2MsEn,
+                                      oriESData="_ES",
+                                      contrastList = contrastList_BrainEVData,
+                                      contrastESData = contrastES_BrainEV) 
+contrastEntrez_Human =  translate_ID(resultsProt_HumanEV_DEPPA$ID,
+                                     "UNIPROT",
+                                     "ENTREZID",
+                                     species_db = org.Mm.eg.db,
+                                     manual_map = translatorMsUni2MsEn,
+                                     oriESData="_ES",
+                                     contrastList = contrastList_HumanData,
+                                     contrastESData = contrastES_Human) 
+
+universe_ALLENTREZ =  translate_ID(resultsProt_HumanEV_DEPPA$ID,
+                                      "UNIPROT",
+                                      "ENTREZID",
+                                      species_db = org.Mm.eg.db,
+                                      manual_map = translatorMsUni2MsEn,
+                                      oriESData="_ES")
+
+universe_ENTREZ = universe_ALLENTREZ$`10090_ENTREZID`
+
+metaDataSetsEntrez = list()
+for (dataset_name in names(metaDataSets)){
+  dataTemp = metaDataSets[[dataset_name]]
+  dataTempFormatted <- stringr::str_to_title(dataTemp)
+  dataTempEntrez = translate_ID(dataTempFormatted,
+                                "SYMBOL",
+                                "ENTREZID",
+                                species_db = org.Mm.eg.db,
+                                manual_map = translatorMsUni2MsEn)
+  NAValues = is.na(dataTempEntrez$`10090_ENTREZID`)
+  if (any(NAValues)) {
+      dataTempEntrez$`10090_ENTREZID`[NAValues] <- translatorMs2Hu$`10090_ID`[
+        match(tolower(dataTempEntrez$original[NAValues]), 
+              tolower(translatorMs2Hu$`10090`))
+      ]
+    }
+  metaDataSetsEntrez[[dataset_name]] = dataTempEntrez$`10090_ENTREZID`
+}
+```
+
+## CUSTOM TERM DATABASES
+
+# Translate all the proteins IDs
+```{r translateTotal, echo=FALSE}
+# Translate all the proteins IDs
+contrastsTranslator_BrainEV = translatorDb(resultsProt_BrainEV_DEPPA$ID)
+contrastsTranslator_HumanEV = translatorDb(resultsProt_HumanEV_DEPPA$ID)
+
+# Translate the databases
+HPAdf  = read.delim("./Data/Data2CustomTermsDatabases/HPA_subcellular_location.tsv",)
+subcellIds = HPAdf$Gene.name
+transHPAdf = translatorHumanSym(subcellIds)
+
+proteomo_df = read_excel("./Data/Data2CustomTermsDatabases/PMID_39742809_ProteomoDB.xlsx",
+                         sheet = "subcell_annotation_summary")
+proteomo_expanded = proteomo_df %>% separate_rows(`Majority protein IDs`,
+                                                  sep = ";")
+proteomoIds = proteomo_expanded$`Majority protein IDs`
+transProteomo = translatorHumanUni(proteomoIds)
+
+uniprot_df  = read.delim("./Data/Data2CustomTermsDatabases/UNIPROTkb_taxonomy_id_9606_2025_03_12.tsv")
+uniprotIds = uniprot_df$Entry
+transuniprot = translatorHumanUni(uniprotIds)
+
+mitocarta_df = read_excel("./Data/Data2CustomTermsDatabases/Mouse_MitoCarta3_Location.xls", 
+             sheet = "A Mouse MitoCarta3.0")
+
+mitocartaIds = data.frame(`10090_ENTREZID` = mitocarta_df$MouseGeneID,
+                          `9606_ENTREZID` = mitocarta_df$HumanOrthologGeneID,
+                          `10090_SYMBOL` = mitocarta_df$Symbol, 
+                          check.names = FALSE)
+
+mitocartaIdsTranslate = translatorMitoCarta(mitocartaIds)
+mitocartaIdsTranslate[mitocartaIdsTranslate == "NULL"] = NA
+
+HPA_cell_type_df = read.delim("./Data/Data2CustomTermsDatabases/HPA_rna_single_nuclei_cluster_type.tsv")
+HPA_brain_cluster_df = read.delim("./Data/Data2CustomTermsDatabases/HPA_rna_single_nuclei_brain_cluster.tsv")
+rnaIds = unique(c(HPA_cell_type_df$Gene.name, HPA_brain_cluster_df$Gene.name))
+transRnaHPA = translatorHumanSym(rnaIds)
+
+translatorALL = bind_rows(contrastsTranslator_BrainEV,
+                          contrastsTranslator_HumanEV,
+                          transHPAdf, 
+                          transProteomo, 
+                          transuniprot, 
+                          mitocartaIdsTranslate, 
+                          transRnaHPA)
+
+translatorALLUnique = translatorALL %>% distinct(`10090_ENTREZID`, .keep_all = TRUE)
+```
+
+# Custom Subcellular location database
+```{r subcellDB, echo=FALSE}
+# Generate subcellular location database
+select <- dplyr::select
+
+proteomicsLocalizationDbALL = createProteomicsLocalizationDb(
+  file_subcell =
+    "./Data/Data2CustomTermsDatabases/HPA_subcellular_location.tsv",
+  file_proteomo =
+    "./Data/Data2CustomTermsDatabases/PMID_39742809_ProteomoDB.xlsx",
+  file_uniprot =
+    "./Data/Data2CustomTermsDatabases/UNIPROTkb_taxonomy_id_9606_2025_03_12.tsv",
+  translator = translatorALLUnique,
+  
+  translatorHumanUniprot = "9606_UNIPROT",
+  translatorMouseEntrez = "10090_ENTREZID",
+  translatorMouseUniprot = "10090_UNIPROT",
+  translatorHumanSymbol = "9606_SYMBOL")
+
+proteomicsLocalizationDb = proteomicsLocalizationDbALL$gene_sets
+```
+
+# Custom Mitocarta location database
+```{r MitoLoc, echo=FALSE}
+#Generate mitocarta location database
+mitoCartaProts =
+  read_excel("./Data/Data2CustomTermsDatabases/Mouse_MitoCarta3_Location.xls", 
+             sheet = "A Mouse MitoCarta3.0")
+mitoCartaProtsEntrez =
+  data.frame(mEntrez = mitoCartaProts$MouseGeneID,
+             Location =mitoCartaProts$MitoCarta3.0_SubMitoLocalization)
+mitoCartaProtsSymbol =
+  data.frame(mSymbol = mitoCartaProts$Symbol,
+             Location = mitoCartaProts$MitoCarta3.0_SubMitoLocalization)
+gene_setsMito = mitoCartaProtsEntrez %>% group_by(Location) %>%
+  summarise(genes = list(unique(mEntrez))) %>% deframe()
+```
+
+# Custom Mitocarta pathway database
+```{r MitoPath, echo=FALSE}
+# Create MitoCarta Pathways database
+mitoCartaPath = read_excel(
+  "./Data/Data2CustomTermsDatabases/Mouse_MitoCarta3_Pathways.xls",
+  sheet = "C MitoPathways")
+mitoCartaPathLong = mitoCartaPath %>% 
+  separate_rows(Genes, sep = ",\\s*") %>%  
+  dplyr::select(Gene = Genes, MitoPathway)
+translatorMsSym2MsEntrez = data.frame("SYMBOL" = mitocartaIdsTranslate$`10090_SYMBOL`,
+                                      "ENTREZID" = mitocartaIdsTranslate$`10090_ENTREZID`)
+mitoCartaPathLongmEntrez = translate_ID(mitoCartaPathLong$Gene, "SYMBOL", "ENTREZID",
+                                           source_taxon = 10090, target_taxon = 10090,
+                                         species_db = org.Mm.eg.db,
+                                        manual_map = translatorMsSym2MsEntrez)
+mitoCartaPathLong$mEntrez = mitoCartaPathLongmEntrez$`10090_ENTREZID`[match(mitoCartaPathLong$Gene,
+                                                                            mitoCartaPathLongmEntrez$original)]
+mitoCartaPathLong$mEntrez = mitoCartaPathLongmEntrez$`10090_ENTREZID`
+MitoCartaPathLongEntrez = mitoCartaPathLong
+names(MitoCartaPathLongEntrez)[names(MitoCartaPathLongEntrez) == "MitoPathway"] = "Location"
+MitoCartaPathLongEntrez = MitoCartaPathLongEntrez %>% filter(!is.na(mEntrez))
+gene_setsMitoPath = MitoCartaPathLongEntrez %>% 
+  group_by(Location) %>% 
+  summarise(genes = list(unique(mEntrez))) %>%
+  deframe()
+
+mitoCartaPath2 = read_excel(
+  "./Data/Data2CustomTermsDatabases/Mouse_MitoCarta3_Pathways_SecondCategory.xls",
+  sheet = "C MitoPathways")
+mitoCartaPathLong2 = mitoCartaPath2 %>% 
+  separate_rows(Genes, sep = ",\\s*") %>%  
+  dplyr::select(Gene = Genes, MitoPathway)
+translatorMsSym2MsEntrez = data.frame("SYMBOL" = mitocartaIdsTranslate$`10090_SYMBOL`,
+                                      "ENTREZID" = mitocartaIdsTranslate$`10090_ENTREZID`)
+mitoCartaPathLongmEntrez2 = translate_ID(mitoCartaPathLong2$Gene, "SYMBOL", "ENTREZID",
+                                           source_taxon = 10090, target_taxon = 10090,
+                                         species_db = org.Mm.eg.db,
+                                         manual_map = translatorMsSym2MsEntrez)
+mitoCartaPathLong2$mEntrez = mitoCartaPathLongmEntrez2$`10090_ENTREZID`[match(mitoCartaPathLong2$Gene,
+                                                                              mitoCartaPathLongmEntrez2$original)]
+mitoCartaPathLong2$mEntrez = mitoCartaPathLongmEntrez2$`10090_ENTREZID`
+MitoCartaPathLongEntrez2 = mitoCartaPathLong2
+names(MitoCartaPathLongEntrez2)[names(MitoCartaPathLongEntrez2) == "MitoPathway"] = "Location"
+MitoCartaPathLongEntrez2 = MitoCartaPathLongEntrez2 %>% filter(!is.na(mEntrez))
+gene_setsMitoPath2 = MitoCartaPathLongEntrez2 %>% 
+  group_by(Location) %>% 
+  summarise(genes = list(unique(mEntrez))) %>%
+  deframe()
+```
+
+# Custom Cell Type Databases
+```{r cellTypeDB, echo=FALSE}
+# Generate general cellular type database (Global Background)
+proteomicsGeneralCellTypeDb = createGeneralCellOriginDb(
+  file_cell = "./Data/Data2CustomTermsDatabases/HPA_rna_single_nuclei_cluster_type.tsv",
+  contrastsTranslator = translatorALLUnique, 
+  nTPM_threshold = 2,
+  translatorHumanUniprot = "9606_UNIPROT",
+  translatorMouseEntrez = "10090_ENTREZID",
+  translatorMouseUniprot = "10090_UNIPROT",
+  translatorHumanSymbol = "9606_SYMBOL",
+  increase = 2.0)
+
+# Generate brain-specific cluster database (Global Background)
+proteomicsBrainCellTypeDb = createGeneralCellOriginDb(
+  file_cell = "./Data/Data2CustomTermsDatabases/HPA_rna_single_nuclei_brain_cluster.tsv",
+  contrastsTranslator = translatorALLUnique,
+  nTPM_threshold = 2,
+  translatorHumanUniprot = "9606_UNIPROT",
+  translatorMouseEntrez = "10090_ENTREZID",
+  translatorMouseUniprot = "10090_UNIPROT",
+  translatorHumanSymbol = "9606_SYMBOL",
+  increase = 2.0)
+```
+
+# KEGG
+```{r KEGG, echo=FALSE}
+
+genes2remove = c("P02535", "P04104", "Q3TTY5", "Q3UV17", "Q61781", 
+                        "Q6IFX2", "Q6NXH9", "Q8VED5", "Q922U2", "Q9Z2K1", 
+                        "Q9Z2T6", "P08730", "Q9QWL7")
+
+contrastES_BrainEV$mEV_12m_AD_vs_mEV_2m_AD_ES =
+  contrastES_BrainEV$mEV_12m_AD_vs_mEV_2m_AD_ES[!names(contrastES_BrainEV$mEV_12m_AD_vs_mEV_2m_AD_ES) %in% genes2remove]
+
+BiocParallel::register(BiocParallel::SerialParam())
+KEGGEnrichment_BrainEV = runEnrichmentAnalysis(contrastES_BrainEV,
+                                                databases = "KEGG",
+                                                out_dir =
+                                                  paste0(outputDirBrainEV,
+                                                         "/KEGG/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "uniprot",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 100000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 3750, 
+                                                heightValue = 4250,
+                                                base_size = 25)
+
+for (contrast in names(KEGGEnrichment_BrainEV)) {
+  enrich_df_gsea <- KEGGEnrichment_BrainEV[[contrast]][["KEGG"]]$df
+  if (!is.null(enrich_df_gsea) && nrow(enrich_df_gsea) > 5) {
+    enrich_df_adapted <- enrich_df_gsea %>%
+      dplyr::rename(geneID = core_enrichment) %>%
+      dplyr::mutate(Count = stringr::str_count(geneID, "/") + 1)
+    cluster_out_dir <- paste0(outputDirBrainEV, "KEGG_Clusters_GSEA/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclustersGSEA(
+        enrich_df = enrich_df_adapted,
+        p_adjust_thresh = 0.05,
+        count_thresh = 3,
+        minClusterSize = 3,
+        plot_sim_thresh = 0.2,
+        similarity_method = "overlap",
+        overlap_metric = "jaccard",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = FALSE,       
+        titledotplot = paste("KEGG GSEA Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "':", e$message))
+    })
+  }
+}
+
+
+KEGGEnrichment_HumanEV = runEnrichmentAnalysis(contrastES_Human,
+                                                databases = "KEGG",
+                                                out_dir =
+                                                  paste0(outputDirHuman,
+                                                         "/KEGG/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "uniprot",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 100000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 4250, 
+                                                heightValue = 4250,
+                                                base_size = 20)
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ES", 
+                   "EVsF7_vs_EVsmEV_ES", 
+                   "EVsF8_vs_EVsmEV_ES")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = KEGGEnrichment_HumanEV, 
+  out_dir = paste0(outputDirHuman, "KEGG/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =30,
+  widthVal = 2000, 
+  heightVal = 4000 
+)
+
+KEGGEnrichment_Meta = runEnrichmentAnalysisORA(metaDataSetsEntrez,
+                                               databases = "KEGG",
+                                               out_dir = paste0(outputDirMetaAnalysis, "/KEGG/"),
+                                               OrgDb = org.Mm.eg.db,
+                                               universeSample = universe_ENTREZ,
+                                               organism = "mmu",
+                                               keyType = "ncbi-geneid",
+                                               minGSSize = 3,
+                                               maxGSSize = 30000,
+                                               pAdjustMethod = "fdr",
+                                               pvalueCutoff = 0.05,
+                                               verbose = FALSE,
+                                               adjpval = TRUE,
+                                               widthValue = 4200, 
+                                               heightValue = 2600,
+                                               base_size = 37)
+
+
+for (contrast in names(KEGGEnrichment_Meta)) {
+  enrich_df <- KEGGEnrichment_Meta[[contrast]][["KEGG"]]$enrichment
+  if (!is.null(enrich_df) && nrow(enrich_df) > 5) {
+    cluster_out_dir <- paste0(outputDirMetaAnalysis, "KEGG_Clusters/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclusters(
+        enrich_df = enrich_df,
+        p_adjust_thresh = 0.05,
+        count_thresh = 3,
+        minClusterSize = 3,
+        plot_sim_thresh = 0.2,
+        similarity_method = "overlap",
+        overlap_metric = "jaccard",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = TRUE,       
+        titledotplot = paste("KEGG Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "'. Not overlapping:", e$message))
+    })
+  }
+}
+
+```
+
+# GOBP
+```{r GO_BP, echo=FALSE}
+genes2remove = c("16661", "16678", "16681", "77055", "16664", "68239", 
+                 "223915", "223917", "110308", "16666", "53622", "16663", "16667")
+
+contrastEntrez_BrainEV$mEV_12m_AD_vs_mEV_2m_AD_ESENTREZID =
+  contrastEntrez_BrainEV$mEV_12m_AD_vs_mEV_2m_AD_ESENTREZID[!names(contrastEntrez_BrainEV$mEV_12m_AD_vs_mEV_2m_AD_ESENTREZID) %in% genes2remove]
+
+BiocParallel::register(BiocParallel::SerialParam())
+GOBPnrichment_BrainEV = runEnrichmentAnalysis(contrastEntrez_BrainEV,
+                                                databases = "GO_BP",
+                                                out_dir =
+                                                  paste0(outputDirBrainEV,
+                                                         "/GO_BP/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.04,
+                                                verbose = FALSE,
+                                                nPermSimple = 10000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 4500, 
+                                                heightValue = 5000,
+                                                base_size = 30)
+
+for (contrast in names(GOBPnrichment_BrainEV)) {
+  enrich_df_gsea <- GOBPnrichment_BrainEV[[contrast]][["GO_BP"]]$df
+  if (!is.null(enrich_df_gsea) && nrow(enrich_df_gsea) > 5) {
+    enrich_df_adapted <- enrich_df_gsea %>%
+      dplyr::rename(geneID = core_enrichment) %>%
+      dplyr::mutate(Count = stringr::str_count(geneID, "/") + 1)
+    cluster_out_dir <- paste0(outputDirBrainEV, "GOBP_Clusters_GSEA/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclustersGSEA(
+        enrich_df = enrich_df_adapted,
+        p_adjust_thresh = 0.05,
+        count_thresh = 10,
+        minClusterSize = 2,
+        plot_sim_thresh = 0.2,
+        similarity_method = "GO",
+        ont = "BP",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = FALSE,
+        use_leading_term = TRUE,
+        titledotplot = paste("GOBP GSEA Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "':", e$message))
+    })
+  }
+}
+
+contrast = "mEV_2m_Ctrl_vs_sEV_2m_Ctrl_ESENTREZID"
+
+dotplot_file = file.path(paste0(outputDirBrainEV, "GOBP_Clusters_GSEA/", contrast, "/", "Clusters_DotPlot.tiff"))
+df_grafico <- cluster_results$plot_df
+p = ggplot(df_grafico, aes(x = reorder(label_y_wrapped, mean_NES), y = mean_NES)) +
+    geom_point(aes(size = n_terms, fill = mean_minusLog10_padj, alpha = mean_sim), 
+               shape = 21, color = "black") +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 1) + 
+    labs(x = NULL,
+         y = "Mean NES",
+         title = NULL) +
+    theme_void() +
+    theme(
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 20), size = 20, face = "bold"),
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 2),
+        axis.text.x = element_text(size = 16, angle = 45, hjust = 1, vjust = 1, color = "black"),
+        axis.text.y = element_text(size = 16, color = "black",  face = "bold", margin = margin(r = 4)),
+        axis.title.y = element_text(size = 16, angle = 90, face = "bold", margin = margin(r = 10)),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.position = "right",
+        legend.box = "horizontal",         
+        legend.box.just = "center",         
+        legend.spacing.x = unit(0.5, "cm"),
+        axis.ticks = element_line(color = "black", linewidth = 1),
+        plot.margin = unit(c(1, 1, 1, 1), "cm")
+      ) +
+      scale_alpha_continuous(range = c(0.5, 1), name = "Similarity") +
+      guides(
+        fill = guide_colorbar(
+          title = "-log10(Adj p)",
+          title.hjust = 0.5,
+          title.theme = element_text(size = 12, hjust = 0.5, face = "bold"),
+          barwidth = unit(0.4, "cm"),
+          barheight = unit(5.7, "cm")
+        ),
+        size = guide_legend(
+          title = "Counts",
+          title.position = "top",
+          title.theme = element_text(size = 12, hjust = 0.5, face = "bold"),
+          ncol = 1
+        ),
+        alpha = guide_legend(
+          title = "Similarity",
+          title.position = "top",
+          title.hjust = 0.5,
+          title.theme = element_text(size = 12, face = "bold", hjust = 0.5), 
+          override.aes = list(size = 11.5)
+        )
+      ) +
+    scale_alpha_continuous(range = c(0.4, 1), name = "Similarity") +
+    scale_size(range = c(6, 12),name = "Counts",
+               breaks = function(x) unique(round(seq(min(x), max(x), length.out = 4)))) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 5), 
+                       expand = expansion(mult = c(0.2, 0.2))) +
+    scale_fill_gradientn(colours = colorRampPalette(c("#005C9A", "#A80022"))(100),
+                         name = "-log10(Adj p)")
+ragg::agg_tiff(filename = dotplot_file, width = 5250, height = 2000, res = 300)
+print(p)
+dev.off()
+
+GOBPEnrichment_HumanEV = runEnrichmentAnalysis(contrastEntrez_Human,
+                                                databases = "GO_BP",
+                                                out_dir =
+                                                  paste0(outputDirHuman,
+                                                         "/GO_BP/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 10000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 4250, 
+                                                heightValue = 4250,
+                                                base_size = 20)
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = GOBPEnrichment_HumanEV, 
+  out_dir = paste0(outputDirHuman, "GO_BP/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.02,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =70,
+  widthVal = 2500, 
+  heightVal = 4000
+)
+
+GOBPEnrichment_Meta = runEnrichmentAnalysisORA(metaDataSetsEntrez,
+                                               databases = "GO_BP",
+                                               out_dir = paste0(outputDirMetaAnalysis, "/GO_BP/"),
+                                               OrgDb = org.Mm.eg.db,
+                                               universeSample = universe_ENTREZ,
+                                               organism = "mmu",
+                                               keyType = "ENTREZID",
+                                               minGSSize = 3,
+                                               maxGSSize = 30000,
+                                               pAdjustMethod = "fdr",
+                                               pvalueCutoff = 0.05,
+                                               verbose = FALSE,
+                                               adjpval = TRUE,
+                                               widthValue = 3000, 
+                                               heightValue = 8000,
+                                               base_size = 25)
+
+for (contrast in names(GOBPEnrichment_Meta)) {
+  enrich_df <- GOBPEnrichment_Meta[[contrast]][["GO_BP"]]$enrichment
+  if (!is.null(enrich_df) && nrow(enrich_df) > 5) {
+    cluster_out_dir <- paste0(outputDirMetaAnalysis, "GP_BP_Clusters/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclusters(
+        enrich_df = enrich_df,
+        p_adjust_thresh = 0.05,
+        count_thresh = 3,
+        minClusterSize = 3,
+        plot_sim_thresh = 0.1,
+        similarity_method = "GO",
+        ont = "BP",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = FALSE,       
+        titledotplot = paste("GO_BP Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "'. Not overlapping:", e$message))
+    })
+  }
+}
+```
+
+# GOCC
+```{r GO_CC, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+GOCCnrichment_BrainEV = runEnrichmentAnalysis(contrastEntrez_BrainEV,
+                                                databases = "GO_CC",
+                                                out_dir =
+                                                  paste0(outputDirBrainEV,
+                                                         "/GO_CC/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 10000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 3750, 
+                                                heightValue = 6000,
+                                                base_size = 29)
+
+for (contrast in names(GOCCnrichment_BrainEV)) {
+  enrich_df_gsea <- GOCCnrichment_BrainEV[[contrast]][["GO_CC"]]$df
+  if (!is.null(enrich_df_gsea) && nrow(enrich_df_gsea) > 5) {
+    enrich_df_adapted <- enrich_df_gsea %>%
+      dplyr::rename(geneID = core_enrichment) %>%
+      dplyr::mutate(Count = stringr::str_count(geneID, "/") + 1)
+    cluster_out_dir <- paste0(outputDirBrainEV, "GOCC_Clusters_GSEA/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclustersGSEA(
+        enrich_df = enrich_df_adapted,
+        p_adjust_thresh = 0.05,
+        count_thresh = 2,
+        minClusterSize = 2,
+        plot_sim_thresh = 0.1,
+        similarity_method = "GO",
+        ont = "CC",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = FALSE,      
+        use_leading_term = TRUE,
+        titledotplot = paste("GOCC GSEA Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "':", e$message))
+    })
+  }
+}
+
+contrast = "mEV_2m_Ctrl_vs_sEV_2m_Ctrl_ESENTREZID"
+dotplot_file = file.path(paste0(outputDirBrainEV, "GO_CC/", contrast, "_horizontal.tiff"))
+df_unclustered <- GOCCnrichment_BrainEV[[contrast]][["GO_CC"]]$df
+df_grafico_unclustered <- df_unclustered %>%
+  dplyr::filter(p.adjust < 0.05) %>% 
+  dplyr::mutate(
+    Count = stringr::str_count(core_enrichment, "/") + 1
+  ) %>%
+  dplyr::arrange(desc(abs(NES))) %>% 
+  dplyr::slice_head(n = 100) 
+
+p = ggplot(df_grafico_unclustered, aes(x = reorder(Description, NES), y = NES)) +
+    geom_point(aes(size = Count, fill = p.adjust), 
+               shape = 21, color = "black") +
+    geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 1) + 
+    labs(x = NULL,
+         y = "NES",
+         title = NULL) +
+    theme_void() +
+    theme(
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 20), size = 20, face = "bold"),
+        panel.border = element_rect(color = "black", fill = NA, linewidth = 2),
+        axis.text.x = element_text(size = 16, angle = 45, hjust = 1, vjust = 1, color = "black"),
+        axis.text.y = element_text(size = 16, color = "black",  face = "bold", margin = margin(r = 4)),
+        axis.title.y = element_text(size = 16, angle = 90, face = "bold", margin = margin(r = 10)),
+        legend.text = element_text(size = 10),
+        legend.title = element_text(size = 14, face = "bold"),
+        legend.position = "left",
+        legend.box = "horizontal",         
+        legend.box.just = "center",         
+        legend.spacing.x = unit(0.5, "cm"),
+        axis.ticks = element_line(color = "black", linewidth = 1),
+        plot.margin = unit(c(1,1, 1, 2), "cm")
+      ) +
+      guides(
+        fill = guide_colorbar(
+          title = "Adj p",
+          title.hjust = 0.5,
+          title.theme = element_text(size = 12, hjust = 0.5, face = "bold"),
+          barwidth = unit(0.4, "cm"),
+          barheight = unit(2.7, "cm")
+        ),
+        size = guide_legend(
+          title = "Counts",
+          title.position = "top",
+          title.theme = element_text(size = 12, hjust = 0.5, face = "bold"),
+          ncol = 1
+        )
+      ) +
+    scale_size(range = c(4, 10), name = "Counts",
+               breaks = function(x) unique(round(seq(min(x), max(x), length.out = 4)))) +
+    scale_y_continuous(breaks = scales::pretty_breaks(n = 5), 
+                       expand = expansion(mult = c(0.2, 0.2))) +
+    scale_fill_gradientn(colours = colorRampPalette(c("#A80022", "#005C9A"))(100),
+                         name = "Adj p")
+
+ragg::agg_tiff(filename = dotplot_file, width = 5500, height = 2000, res = 300)
+print(p)
+dev.off()
+
+
+GOCCEnrichment_HumanEV = runEnrichmentAnalysis(contrastEntrez_Human,
+                                                databases = "GO_CC",
+                                                out_dir =
+                                                  paste0(outputDirHuman,
+                                                         "/GO_CC/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 10000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 4250, 
+                                                heightValue = 4250,
+                                                base_size = 20)
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = GOCCEnrichment_HumanEV, 
+  out_dir = paste0(outputDirHuman, "G0_CC/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =70,
+  widthVal = 2500, 
+  heightVal = 4000
+)
+
+GOCCEnrichment_Meta = runEnrichmentAnalysisORA(metaDataSetsEntrez,
+                                               databases = "GO_CC",
+                                               out_dir = paste0(outputDirMetaAnalysis, "/GO_CC/"),
+                                               OrgDb = org.Mm.eg.db,
+                                               universeSample = universe_ENTREZ,
+                                               organism = "mmu",
+                                               keyType = "ENTREZID",
+                                               minGSSize = 3,
+                                               maxGSSize = 30000,
+                                               pAdjustMethod = "fdr",
+                                               pvalueCutoff = 0.05,
+                                               verbose = FALSE,
+                                               adjpval = TRUE,
+                                               widthValue = 3000, 
+                                               heightValue = 8000,
+                                               base_size = 25)
+
+for (contrast in names(GOCCEnrichment_Meta)) {
+  enrich_df <- GOCCEnrichment_Meta[[contrast]][["GO_CC"]]$enrichment
+  if (!is.null(enrich_df) && nrow(enrich_df) > 5) {
+    cluster_out_dir <- paste0(outputDirMetaAnalysis, "GP_CC_Clusters/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclusters(
+        enrich_df = enrich_df,
+        p_adjust_thresh = 0.05,
+        count_thresh = 3,
+        minClusterSize = 3,
+        plot_sim_thresh = 0.1,
+        similarity_method = "GO",
+        ont = "CC",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = TRUE,       
+        titledotplot = paste("GO_CC Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "'. Not overlapping:", e$message))
+    })
+  }
+}
+```
+
+# GOMF
+```{r GO_MF, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+GOMFnrichment_BrainEV = runEnrichmentAnalysis(contrastEntrez_BrainEV,
+                                                databases = "GO_MF",
+                                                out_dir =
+                                                  paste0(outputDirBrainEV,
+                                                         "/GO_MF/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 1000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 4250, 
+                                                heightValue = 4250,
+                                                base_size = 20)
+
+for (contrast in names(GOMFnrichment_BrainEV)) {
+  enrich_df_gsea <- GOMFnrichment_BrainEV[[contrast]][["GO_MF"]]$df
+  if (!is.null(enrich_df_gsea) && nrow(enrich_df_gsea) > 5) {
+    enrich_df_adapted <- enrich_df_gsea %>%
+      dplyr::rename(geneID = core_enrichment) %>%
+      dplyr::mutate(Count = stringr::str_count(geneID, "/") + 1)
+    cluster_out_dir <- paste0(outputDirBrainEV, "GOMF_Clusters_GSEA/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclustersGSEA(
+        enrich_df = enrich_df_adapted,
+        p_adjust_thresh = 0.05,
+        count_thresh = 3,
+        minClusterSize = 3,
+        plot_sim_thresh = 0.2,
+        similarity_method = "GO",
+        ont = "MF",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = TRUE,       
+        titledotplot = paste("GOMF GSEA Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "':", e$message))
+    })
+  }
+}
+
+
+GOMFEnrichment_HumanEV = runEnrichmentAnalysis(contrastEntrez_Human,
+                                                databases = "GO_MF",
+                                                out_dir =
+                                                  paste0(outputDirHuman,
+                                                         "/GO_MF/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mmu",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 1000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 4250, 
+                                                heightValue = 4250,
+                                                base_size = 20)
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = GOMFEnrichment_HumanEV, 
+  out_dir = paste0(outputDirHuman, "GO_MF/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs"
+)
+
+
+GOMFEnrichment_Meta = runEnrichmentAnalysisORA(metaDataSetsEntrez,
+                                               databases = "GO_MF",
+                                               out_dir = paste0(outputDirMetaAnalysis, "/GO_MF/"),
+                                               OrgDb = org.Mm.eg.db,
+                                               universeSample = universe_ENTREZ,
+                                               organism = "mmu",
+                                               keyType = "ENTREZID",
+                                               minGSSize = 3,
+                                               maxGSSize = 30000,
+                                               pAdjustMethod = "fdr",
+                                               pvalueCutoff = 0.05,
+                                               verbose = FALSE,
+                                               adjpval = TRUE,
+                                               widthValue = 4250, 
+                                               heightValue = 4250,
+                                               base_size = 20)
+
+for (contrast in names(GOMFEnrichment_Meta)) {
+  enrich_df <- GOMFEnrichment_Meta[[contrast]][["GO_MF"]]$enrichment
+  if (!is.null(enrich_df) && nrow(enrich_df) > 5) {
+    cluster_out_dir <- paste0(outputDirMetaAnalysis, "GP_MF_Clusters/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclusters(
+        enrich_df = enrich_df,
+        p_adjust_thresh = 0.05,
+        count_thresh = 3,
+        minClusterSize = 3,
+        plot_sim_thresh = 0.1,
+        similarity_method = "GO",
+        ont = "MF",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = TRUE,       
+        titledotplot = paste("GO_MF Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "'. Not overlapping:", e$message))
+    })
+  }
+}
+```
+
+# Reactome
+```{r GO_MF, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+Reactomenrichment_BrainEV = runEnrichmentAnalysis(contrastEntrez_BrainEV,
+                                                databases = "Reactome",
+                                                out_dir =
+                                                  paste0(outputDirBrainEV,
+                                                         "/Reactome/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mouse",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 10000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 3500, 
+                                                heightValue = 6000,
+                                                base_size = 23)
+
+for (contrast in names(Reactomenrichment_BrainEV)) {
+  enrich_df_gsea <- Reactomenrichment_BrainEV[[contrast]][["Reactome"]]$df
+  if (!is.null(enrich_df_gsea) && nrow(enrich_df_gsea) > 5) {
+    enrich_df_adapted <- enrich_df_gsea %>%
+      dplyr::rename(geneID = core_enrichment) %>%
+      dplyr::mutate(Count = stringr::str_count(geneID, "/") + 1)
+    cluster_out_dir <- paste0(outputDirBrainEV, "Reactome_Clusters_GSEA/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclustersGSEA(
+        enrich_df = enrich_df_adapted,
+        p_adjust_thresh = 0.05,
+        count_thresh = 2,
+        minClusterSize = 2,
+        plot_sim_thresh = 0.1,
+        similarity_method = "overlap",
+        overlap_metric = "jaccard",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = FALSE,       
+        titledotplot = paste("Reactome GSEA Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "':", e$message))
+    })
+  }
+}
+
+ReactomeEnrichment_HumanEV = runEnrichmentAnalysis(contrastEntrez_Human,
+                                                databases = "Reactome",
+                                                out_dir =
+                                                  paste0(outputDirHuman,
+                                                         "/Reactome/"),
+                                                OrgDb = org.Mm.eg.db,
+                                                organism = "mouse",
+                                                keyType = "ENTREZID",
+                                                minGSSize = 3,
+                                                maxGSSize = 30000,
+                                                pAdjustMethod = "fdr",
+                                                pvalueCutoff = 0.05,
+                                                verbose = FALSE,
+                                                nPermSimple = 1000,
+                                                eps = 0.00000001,
+                                                adjpval = TRUE,
+                                                widthValue = 4250, 
+                                                heightValue = 4250,
+                                                base_size = 20)
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = ReactomeEnrichment_HumanEV, 
+  out_dir = paste0(outputDirHuman, "Reactome/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =30,
+  widthVal = 2500, 
+  heightVal = 4000
+)
+
+ReactomeEnrichment_Meta = runEnrichmentAnalysisORA(metaDataSetsEntrez,
+                                               databases = "Reactome",
+                                               out_dir = paste0(outputDirMetaAnalysis, "/Reactome/"),
+                                               OrgDb = org.Mm.eg.db,
+                                               universeSample = universe_ENTREZ,
+                                               organism = "mouse",
+                                               keyType = "ENTREZID",
+                                               minGSSize = 3,
+                                               maxGSSize = 30000,
+                                               pAdjustMethod = "fdr",
+                                               pvalueCutoff = 0.05,
+                                               verbose = FALSE,
+                                               adjpval = TRUE,
+                                               widthValue = 3000, 
+                                               heightValue = 4700,
+                                               base_size = 26)
+
+
+for (contrast in names(ReactomeEnrichment_Meta)) {
+  enrich_df <- ReactomeEnrichment_Meta[[contrast]][["Reactome"]]$enrichment
+  if (!is.null(enrich_df) && nrow(enrich_df) > 5) {
+    cluster_out_dir <- paste0(outputDirMetaAnalysis, "Reactome_Clusters/", contrast, "/")
+    tryCatch({
+      cluster_results <- analyzeEnrichmentTermsclusters(
+        enrich_df = enrich_df,
+        p_adjust_thresh = 0.05,
+        count_thresh = 3,
+        minClusterSize = 3,
+        plot_sim_thresh = 0.05,
+        similarity_method = "overlap",
+        overlap_metric = "jaccard",
+        output_dir = cluster_out_dir,
+        max_keywords = 7,
+        use_wordcloud = FALSE,       
+        titledotplot = paste("Reactome Clusters -", contrast)
+      )
+    }, error = function(e) {
+      message(paste("Skipping '", contrast, "'. Not overlapping:", e$message))
+    })
+  }
+}
+```
+
+# GeneralCellType
+```{r CellType, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+generalCellType_FGSEA_BrainEV = analyzeContrastFGSEA(
+    contrastEntrez_BrainEV, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_BrainEVData,
+    proteomicsGeneralCellTypeDb, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "GeneralCellType", 
+    out_dir = paste0(outputDirBrainEV, "GeneralCellType/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 4250, 
+    heightValue = 4250,
+    base_size = 20,
+    rangeX = c(-1, 0))
+
+generalCellTypeAbundance_BrainEV = analyzeCuratedAbundance(
+  sigProt = sigProt_BrainEV_RAW, 
+  gene_sets = proteomicsGeneralCellTypeDb, 
+  translator = contrastsTranslator_BrainEV,
+  term2Plot = "astrocyte", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 3, 
+  gene_sets_Title = "GeneralCellType",
+  out_dir  = paste0(outputDirBrainEV, "GeneralCellType/"),
+  legendSize = 12,
+  is_log2 = FALSE)
+
+generalCellType_FGSEA_HumanEV = analyzeContrastFGSEA(
+    contrastEntrez_Human, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_HumanData,
+    proteomicsGeneralCellTypeDb, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "GeneralCellType", 
+    out_dir = paste0(outputDirHuman, "GeneralCellType/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+generalCellTypeAbundance_HumanEV = analyzeCuratedAbundance(
+  sigProt = sigProt_HumanEV_RAW, 
+  gene_sets = proteomicsGeneralCellTypeDb, 
+  translator = contrastsTranslator_HumanEV,
+  term2Plot = "astrocyte", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 3, 
+  gene_sets_Title = "GeneralCellType",
+  out_dir  = paste0(outputDirHuman, "GeneralCellType/"),
+  legendSize = 15,
+  is_log2 = FALSE)
+
+pre_term2gene_proteomicsLocalizationDb = stack(proteomicsGeneralCellTypeDb)
+term2gene_proteomicsLocalizationDb = data.frame(
+  term = pre_term2gene_proteomicsLocalizationDb$ind,
+  gene = as.character(pre_term2gene_proteomicsLocalizationDb$values)
+)
+subcellLocEnrich_mEV = lapply(names(metaDataSetsEntrez), function(clusterName) {
+  clusterData = as.character(metaDataSetsEntrez[[clusterName]])
+  clusterResult = enricher(
+    gene = clusterData, 
+    TERM2GENE = term2gene_proteomicsLocalizationDb,
+    universe = as.character(universe_ENTREZ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "fdr",
+    minGSSize = 3,
+    maxGSSize = 300000
+  )
+  if (!is.null(clusterResult) && nrow(clusterResult@result) > 0) {
+    clusterResult_df = as.data.frame(clusterResult@result)
+    
+    write.csv(clusterResult_df, paste0(outputDirMetaAnalysis, 
+                                       "GeneralCellType/", 
+                                       clusterName, "_enrichment.csv"), 
+              row.names = FALSE)
+    clusterResultSig = subset(clusterResult_df, p.adjust < 0.05)
+    
+    if (nrow(clusterResultSig) > 0) {
+      clusterResultSig$GeneRatio_num = sapply(clusterResultSig$GeneRatio, function(x) {
+        eval(parse(text = x))
+      })
+      clusterResultSig_filtered = subset(clusterResultSig, GeneRatio_num > 0.00)
+      clusterResultPlot = clusterResult
+      clusterResultPlot@result = clusterResultSig_filtered
+      if (nrow(clusterResultSig_filtered) > 0) {
+        dir2save = paste0(outputDirMetaAnalysis, 
+                          "GeneralCellType/", 
+                          clusterName, "_enrichment.tiff")
+        tiff(filename = dir2save, width = 4000, height = 4250, res = 300)
+        d = dotplot(clusterResultPlot,
+                    showCategory = 20,
+                    title = paste("Enrichment -", clusterName)) +
+          aes(fill = p.adjust) +
+          labs(title = "Cell Type") +
+          theme_void() +
+          theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+                axis.text.y = element_text(size = 45, hjust = 1, margin = margin(r = 0.5)),
+                axis.text.x = element_text(size = 30),
+                axis.title.x = element_text(size = 45, face = "bold", margin = margin(t=5)),
+                title = element_text(size = 45, face = "bold"),
+                legend.text = element_text(size = 35),
+                legend.title = element_text(size = 35, margin = margin(b = 20)),
+                legend.position = "right",
+                legend.box.just = "center",
+                legend.title.align = 0.5,
+                legend.spacing.y = unit(1.5, "cm"),
+                legend.box.spacing = unit(1, "cm"),
+                legend.key.height = unit(1.5, "cm"),
+                plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+          guides(color = guide_colorbar(
+            title = "Adj p", 
+            title.hjust = 0.5,
+            label.theme = element_text(hjust = 0.5)
+          ),
+          size = guide_legend(
+            title = "Counts",
+            title.position = "top",
+            title.hjust = 0.5,
+            ncol = 1,
+            label.theme = element_text(hjust = 0.5)
+          )) +
+          annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf,
+                   ymax = Inf, fill = "dimgray", alpha = 0.1) +
+          annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf,
+                   ymax = Inf, fill = "#870052", alpha = 0.1) +
+          coord_cartesian(clip = "off") +
+          scale_size(range = c(15, 25)) +
+          scale_y_discrete(labels = function(x) str_wrap(x, width = 70)) + 
+          scale_x_continuous(limits = c(0, 0.5), breaks = seq(0, 0.5, 0.25)) +
+          scale_fill_gradientn(
+            colours = colorRampPalette(c("darkgreen", "#4F0433"))(100),
+            name = "Adj p")
+        print(d)
+        dev.off()
+      }
+    }
+    return(clusterResult_df)
+  } else {
+    return(NULL)
+  }
+})
+```
+
+# BrainCellType
+```{r CellType, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+brainCellType_FGSEA_BrainEV = analyzeContrastFGSEA(
+    contrastEntrez_BrainEV, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_BrainEVData,
+    proteomicsBrainCellTypeDb, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "BrainCellType", 
+    out_dir = paste0(outputDirBrainEV, "BrainCellType/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+brainCellTypeAbundance_BrainEV = analyzeCuratedAbundance(
+  sigProt = sigProt_BrainEV_RAW, 
+  gene_sets = proteomicsBrainCellTypeDb, 
+  translator = contrastsTranslator_BrainEV,
+  term2Plot = "astrocyte", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 0, 
+  gene_sets_Title = "BrainCellType",
+  out_dir  = paste0(outputDirBrainEV, "BrainCellType/"),
+  legendSize = 12,
+  is_log2 = FALSE)
+
+brainCellType_FGSEA_HumanEV = analyzeContrastFGSEA(
+    contrastEntrez_Human, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_HumanData,
+    proteomicsBrainCellTypeDb, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "BrainCellType", 
+    out_dir = paste0(outputDirHuman, "BrainCellType/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+brainCellTypeAbundance_HumanEV = analyzeCuratedAbundance(
+  sigProt = sigProt_HumanEV_RAW, 
+  gene_sets = proteomicsBrainCellTypeDb, 
+  translator = contrastsTranslator_HumanEV,
+  term2Plot = "astrocyte", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 0, 
+  gene_sets_Title = "BrainCellType",
+  out_dir  = paste0(outputDirHuman, "BrainCellType/"),
+  legendSize = 15,
+  is_log2 = FALSE)
+
+pre_term2gene_proteomicsLocalizationDb = stack(proteomicsBrainCellTypeDb)
+term2gene_proteomicsLocalizationDb = data.frame(
+  term = pre_term2gene_proteomicsLocalizationDb$ind,
+  gene = as.character(pre_term2gene_proteomicsLocalizationDb$values)
+)
+subcellLocEnrich_mEV = lapply(names(metaDataSetsEntrez), function(clusterName) {
+  clusterData = as.character(metaDataSetsEntrez[[clusterName]])
+  clusterResult = enricher(
+    gene = clusterData, 
+    TERM2GENE = term2gene_proteomicsLocalizationDb,
+    universe = as.character(universe_ENTREZ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "fdr",
+    minGSSize = 3,
+    maxGSSize = 300000
+  )
+  if (!is.null(clusterResult) && nrow(clusterResult@result) > 0) {
+    clusterResult_df = as.data.frame(clusterResult@result)
+    
+    write.csv(clusterResult_df, paste0(outputDirMetaAnalysis, 
+                                       "BrainCellType/", 
+                                       clusterName, "_enrichment.csv"), 
+              row.names = FALSE)
+    clusterResultSig = subset(clusterResult_df, p.adjust < 0.05)
+    
+    if (nrow(clusterResultSig) > 0) {
+      clusterResultSig$GeneRatio_num = sapply(clusterResultSig$GeneRatio, function(x) {
+        eval(parse(text = x))
+      })
+      clusterResultSig_filtered = subset(clusterResultSig, GeneRatio_num > 0.00)
+      clusterResultPlot = clusterResult
+      clusterResultPlot@result = clusterResultSig_filtered
+      if (nrow(clusterResultSig_filtered) > 0) {
+        dir2save = paste0(outputDirMetaAnalysis, 
+                          "BrainCellType/", 
+                          clusterName, "_enrichment.tiff")
+        tiff(filename = dir2save, width = 4000, height = 4250, res = 300)
+        d = dotplot(clusterResultPlot,
+                    showCategory = 20,
+                    title = paste("Enrichment -", clusterName)) +
+          aes(fill = p.adjust) +
+          labs(title = "Cell Type") +
+          theme_void() +
+          theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+                axis.text.y = element_text(size = 45, hjust = 1,
+                                           margin = margin(r = 0.5)),
+                axis.text.x = element_text(size = 30),
+                axis.title.x = element_text(size = 45, face = "bold",
+                                            margin = margin(t=5)),
+                title = element_text(size = 45, face = "bold"),
+                legend.text = element_text(size = 35),
+                legend.title = element_text(size = 35, margin = margin(b = 20)),
+                legend.position = "right",
+                legend.box.just = "center",
+                legend.title.align = 0.5,
+                legend.spacing.y = unit(1.5, "cm"),
+                legend.box.spacing = unit(1, "cm"),
+                legend.key.height = unit(1.5, "cm"),
+                plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+          guides(color = guide_colorbar(
+            title = "Adj p", 
+            title.hjust = 0.5,
+            label.theme = element_text(hjust = 0.5)
+          ),
+          size = guide_legend(
+            title = "Counts",
+            title.position = "top",
+            title.hjust = 0.5,
+            ncol = 1,
+            label.theme = element_text(hjust = 0.5)
+          )) +
+          annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf,
+                   ymax = Inf, fill = "dimgray", alpha = 0.1) +
+          annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf,
+                   ymax = Inf, fill = "#870052", alpha = 0.1) +
+          coord_cartesian(clip = "off") +
+          scale_size(range = c(15, 25)) +
+          scale_y_discrete(labels = function(x) str_wrap(x, width = 70)) + 
+          scale_x_continuous(limits = c(0, 0.5), breaks = seq(0, 0.5, 0.25)) +
+          scale_fill_gradientn(
+            colours = colorRampPalette(c("darkgreen", "#4F0433"))(100),
+            name = "Adj p")
+        print(d)
+        dev.off()
+      }
+    }
+    return(clusterResult_df)
+  } else {
+    return(NULL)
+  }
+})
+```
+
+# CellType
+```{r CellType, echo=FALSE}
+db_original <- proteomicsBrainCellTypeDb
+
+mapeo <- list(
+  "Neurons" = c("amygdala excitatory", "cerebellar inhibitory", "cge interneuron", 
+                "deep-layer corticothalamic and 6b", "deep-layer intratelencephalic", 
+                "deep-layer near-projecting", "eccentric medium spiny neuron", 
+                "hippocampal ca1-3", "hippocampal ca4", "hippocampal dentate gyrus", 
+                "lamp5-lhx6 and chandelier", "lower rhombic lip", "mammillary body", 
+                "medium spiny neuron", "mge interneuron", "midbrain-derived inhibitory", 
+                "thalamic excitatory", "upper rhombic lip", "upper-layer intratelencephalic"),
+  
+  "Astroglia" = c("astrocyte", "bergmann glia"),
+  
+  "Oligodendroglia" = c("committed oligodendrocyte precursor", 
+             "oligodendrocyte", "oligodendrocyte precursor cell"),
+  
+  "Microglia" = c("central nervous system macrophage"),
+  
+  "Leukocyte" = c("leukocyte"),
+  
+  "Pericyte" = c("pericyte"),
+  
+  "Choroid plexus" = c("choroid plexus epithelial cell"),
+  
+  "Ependymal cell" = c("ependymal cell"),
+  
+  "Vascular unit" = c("endothelial cell", "fibroblast",
+                                    "vascular associated smooth muscle cell"),
+  
+  "Other" = c("miscellaneous", "splatter")
+)
+
+db_general <- list()
+
+for (categoria in names(mapeo)) {
+  tipos_especificos <- mapeo[[categoria]]
+  tipos_presentes <- intersect(tipos_especificos, names(db_original))
+  if(length(tipos_presentes) > 0) {
+    valores_combinados <- unique(unlist(db_original[tipos_presentes],
+                                        use.names = FALSE))
+    db_general[[categoria]] <- valores_combinados
+  }
+}
+
+BiocParallel::register(BiocParallel::SerialParam())
+cellType_FGSEA_BrainEV = analyzeContrastFGSEA(
+    contrastEntrez_BrainEV, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_BrainEVData,
+    db_general, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "cellType", 
+    out_dir = paste0(outputDirBrainEV, "cellType/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 2500, 
+    heightValue = 4000,
+    base_size = 28,
+    rangeX = c(-1, 0))
+
+cellTypeAbundance_BrainEV = analyzeCuratedAbundance(
+  sigProt = sigProt_BrainEV_RAW, 
+  gene_sets = db_general, 
+  translator = contrastsTranslator_BrainEV,
+  term2Plot = "Astroglia", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 4, 
+  gene_sets_Title = "cellType",
+  out_dir  = paste0(outputDirBrainEV, "cellType/"),
+  legendSize = 40,
+  is_log2 = FALSE)
+
+cellType_FGSEA_HumanEV = analyzeContrastFGSEA(
+    contrastEntrez_Human, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_HumanData,
+    db_general, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "cellType", 
+    out_dir = paste0(outputDirHuman, "cellType/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 4250, 
+    heightValue = 4250,
+    base_size = 20,
+    rangeX = c(-1, 0))
+
+contrasts2plot = c("EVsF1_vs_EVsmEV_ESENTREZID", 
+                   "EVsF2_vs_EVsmEV_ESENTREZID", 
+                   "EVsF3_vs_EVsmEV_ESENTREZID", 
+                   "EVsF4_vs_EVsmEV_ESENTREZID", 
+                   "EVsF5_vs_EVsmEV_ESENTREZID", 
+                   "EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = cellType_FGSEA_HumanEV, 
+  out_dir = paste0(outputDirHuman, "cellType/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =70,
+  widthVal = 2000, 
+  heightVal = 4000
+)
+
+cellTypeAbundance_HumanEV = analyzeCuratedAbundance(
+  sigProt = sigProt_HumanEV_RAW, 
+  gene_sets = db_general, 
+  translator = contrastsTranslator_HumanEV,
+  term2Plot = "Astroglia", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 4, 
+  min_threshold = 4.3, 
+  gene_sets_Title = "cellType",
+  out_dir  = paste0(outputDirHuman, "cellType/"),
+  legendSize = 30,
+  is_log2 = FALSE)
+
+pre_term2gene_proteomicsLocalizationDb = stack(db_general)
+term2gene_proteomicsLocalizationDb = data.frame(
+  term = pre_term2gene_proteomicsLocalizationDb$ind,
+  gene = as.character(pre_term2gene_proteomicsLocalizationDb$values)
+)
+subcellLocEnrich_mEV = lapply(names(metaDataSetsEntrez), function(clusterName) {
+  clusterData = as.character(metaDataSetsEntrez[[clusterName]])
+  clusterResult = enricher(
+    gene = clusterData, 
+    TERM2GENE = term2gene_proteomicsLocalizationDb,
+    universe = as.character(universe_ENTREZ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "fdr",
+    minGSSize = 3,
+    maxGSSize = 300000
+  )
+  if (!is.null(clusterResult) && nrow(clusterResult@result) > 0) {
+    clusterResult_df = as.data.frame(clusterResult@result)
+    
+    write.csv(clusterResult_df, paste0(outputDirMetaAnalysis, 
+                                       "cellType/", 
+                                       clusterName, "_enrichment.csv"), 
+              row.names = FALSE)
+    clusterResultSig = subset(clusterResult_df, p.adjust < 0.05)
+    
+    if (nrow(clusterResultSig) > 0) {
+      clusterResultSig$GeneRatio_num = sapply(clusterResultSig$GeneRatio, function(x) {
+        eval(parse(text = x))
+      })
+      clusterResultSig_filtered = subset(clusterResultSig, GeneRatio_num > 0.00)
+      clusterResultPlot = clusterResult
+      clusterResultPlot@result = clusterResultSig_filtered
+      if (nrow(clusterResultSig_filtered) > 0) {
+        dir2save = paste0(outputDirMetaAnalysis, 
+                          "cellType/", 
+                          clusterName, "_enrichment.tiff")
+        tiff(filename = dir2save, width = 2700, height = 1300, res = 300)
+        d = dotplot(clusterResultPlot,
+                    showCategory = 20,
+                    title = paste("Enrichment -", clusterName)) +
+          aes(fill = p.adjust) +
+          geom_hline(yintercept = 0, linetype = "dashed", color = "gray50",
+                     linewidth = 1) + 
+          labs(title = NULL) +
+          theme_void() +
+          theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+                axis.text.y = element_text(size = 35, hjust = 0.5,
+                                           margin = margin(r = 10)),
+                axis.text.x = element_text(hjust = 0.5, size = 20),
+                axis.title.x = element_text(size = 25, face = "bold",
+                                            margin = margin(t=5)),
+                title = element_text(size = 45, face = "bold"),
+                legend.text = element_text(size = 20),
+                legend.title = element_text(size = 25, hjust = 0.5,),
+                legend.position = "right",
+                legend.box.just = "center",
+                legend.title.align = 0.5,
+                legend.spacing.y = unit(0.5, "cm"),
+                #legend.box.spacing = unit(1, "cm"),
+                #legend.key.height = unit(1.5, "cm"),
+                axis.ticks = element_line(color = "black", linewidth = 1),
+                panel.border = element_rect(color = "black", fill = NA,
+                                            linewidth = 2),
+                plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+          guides(
+            fill = guide_colorbar(
+            title = "Adj p", 
+            title.hjust = 0.5,
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            barwidth = unit(0.4, "cm"),
+            barheight = unit(2.8, "cm"),
+            label.theme = element_text(hjust = 0.5)
+          ),
+          size = guide_legend(
+            title = "Counts",
+            title.position = "top",
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            ncol = 1,
+            label.theme = element_text(hjust = 0.5)
+          )) +
+          #annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, fill = "dimgray", alpha = 0.1) +
+          #annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "#870052", alpha = 0.1) +
+          scale_size(range = c(12, 22),
+                     breaks = function(x) unique(round(seq(min(x), max(x),
+                                                           length.out = 2)))) +
+          scale_y_discrete(labels = function(x) str_wrap(x, width = 70)) + 
+          scale_x_continuous(limits = c(0, NA),
+                             expand = expansion(mult = c(0.1, 0.2)),
+                             breaks = scales::pretty_breaks(n = 4)) +
+          scale_fill_gradientn(
+            colours = colorRampPalette(c("#A80022", "#005C9A"))(100),
+            name = "Adj p")
+        print(d)
+        dev.off()
+      }
+    }
+    return(clusterResult_df)
+  } else {
+    return(NULL)
+  }
+})
+```
+
+# SubCellLocation
+```{r SubCell, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+SubCellularLocation_FGSEA_BrainEV = analyzeContrastFGSEA(
+    contrastEntrez_BrainEV, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_BrainEVData,
+    proteomicsLocalizationDb, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "SubCellularLocation", 
+    out_dir = paste0(outputDirBrainEV, "SubCellularLocation/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 2750, 
+    heightValue = 4500,
+    base_size = 30,
+    rangeX = c(-1, 0))
+
+SubCellularLocationAbundance_BrainEV = analyzeCuratedAbundance(
+  sigProt = sigProt_BrainEV_RAW, 
+  gene_sets = proteomicsLocalizationDb, 
+  translator = contrastsTranslator_BrainEV,
+  term2Plot = "Mitochondrion", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 2.7, 
+  min_threshold = 2.7, 
+  gene_sets_Title = "SubCellularLocation",
+  out_dir  = paste0(outputDirBrainEV, "SubCellularLocation/"),
+  legendSize = 30,
+  is_log2 = FALSE)
+
+SubCellularLocation_FGSEA_HumanEV = analyzeContrastFGSEA(
+    contrastEntrez_Human, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_HumanData,
+    proteomicsLocalizationDb, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "SubCellularLocation", 
+    out_dir = paste0(outputDirHuman, "SubCellularLocation/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = SubCellularLocation_FGSEA_HumanEV, 
+  out_dir = paste0(outputDirHuman, "SubCellularLocation/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =70,
+  widthVal = 2000, 
+  heightVal = 4000
+)
+
+SubCellularLocationAbundance_HumanEV = analyzeCuratedAbundance(
+  sigProt = sigProt_HumanEV_RAW, 
+  gene_sets = proteomicsLocalizationDb, 
+  translator = contrastsTranslator_HumanEV,
+  term2Plot = "Mitochondrion", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3.2, 
+  min_threshold = 3.2, 
+  gene_sets_Title = "SubCellularLocation",
+  out_dir  = paste0(outputDirHuman, "SubCellularLocation/"),
+  legendSize = 25,
+  is_log2 = FALSE)
+
+pre_term2gene_proteomicsLocalizationDb = stack(proteomicsLocalizationDb)
+term2gene_proteomicsLocalizationDb = data.frame(
+  term = pre_term2gene_proteomicsLocalizationDb$ind,
+  gene = as.character(pre_term2gene_proteomicsLocalizationDb$values)
+)
+SubCellularLocationEnrich_mEV = lapply(names(metaDataSetsEntrez), function(clusterName) {
+  clusterData = as.character(metaDataSetsEntrez[[clusterName]])
+  clusterResult = enricher(
+    gene = clusterData, 
+    TERM2GENE = term2gene_proteomicsLocalizationDb,
+    universe = as.character(universe_ENTREZ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "fdr",
+    minGSSize = 3,
+    maxGSSize = 300000
+  )
+  if (!is.null(clusterResult) && nrow(clusterResult@result) > 0) {
+    clusterResult_df = as.data.frame(clusterResult@result)
+    
+    write.csv(clusterResult_df, paste0(outputDirMetaAnalysis, 
+                                       "SubCellularLocation/", 
+                                       clusterName, "_enrichment.csv"), 
+              row.names = FALSE)
+    clusterResultSig = subset(clusterResult_df, p.adjust < 0.05)
+    
+    if (nrow(clusterResultSig) > 0) {
+      clusterResultSig$GeneRatio_num = sapply(clusterResultSig$GeneRatio, function(x) {
+        eval(parse(text = x))
+      })
+      clusterResultSig_filtered = subset(clusterResultSig, GeneRatio_num > 0.00)
+      clusterResultPlot = clusterResult
+      clusterResultPlot@result = clusterResultSig_filtered
+      if (nrow(clusterResultSig_filtered) > 0) {
+        dir2save = paste0(outputDirMetaAnalysis, 
+                          "SubCellularLocation/", 
+                          clusterName, "_enrichment.tiff")
+        tiff(filename = dir2save, width = 2700, height = 2000, res = 300)
+        d = dotplot(clusterResultPlot,
+                    showCategory = 20,
+                    title = paste("Enrichment -", clusterName)) +
+          aes(fill = p.adjust) +
+          geom_hline(yintercept = 0, linetype = "dashed", color = "gray50",
+                     linewidth = 1) + 
+          labs(title = NULL) +
+          theme_void() +
+          theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+                axis.text.y = element_text(size = 38, hjust = 0.5,
+                                           margin = margin(r = 10)),
+                axis.text.x = element_text(hjust = 0.5, size = 20),
+                axis.title.x = element_text(size = 25, face = "bold",
+                                            margin = margin(t=5)),
+                title = element_text(size = 45, face = "bold"),
+                legend.text = element_text(size = 20),
+                legend.title = element_text(size = 25, hjust = 0.5,),
+                legend.position = "right",
+                legend.box.just = "center",
+                legend.title.align = 0.5,
+                legend.spacing.y = unit(0.5, "cm"),
+                #legend.box.spacing = unit(1, "cm"),
+                #legend.key.height = unit(1.5, "cm"),
+                axis.ticks = element_line(color = "black", linewidth = 1),
+                panel.border = element_rect(color = "black", fill = NA,
+                                            linewidth = 2),
+                plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+          guides(
+            fill = guide_colorbar(
+            title = "Adj p", 
+            title.hjust = 0.5,
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            barwidth = unit(0.4, "cm"),
+            barheight = unit(2.8, "cm"),
+            label.theme = element_text(hjust = 0.5)
+          ),
+          size = guide_legend(
+            title = "Counts",
+            title.position = "top",
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            ncol = 1,
+            label.theme = element_text(hjust = 0.5)
+          )) +
+          #annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, fill = "dimgray", alpha = 0.1) +
+          #annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "#870052", alpha = 0.1) +
+          scale_size(range = c(12, 22),
+                     breaks = function(x) unique(round(seq(min(x), max(x),
+                                                           length.out = 4)))) +
+          scale_y_discrete(labels = function(x) str_wrap(x, width = 10)) + 
+          scale_x_continuous(limits = c(0, NA),
+                             expand = expansion(mult = c(0.1, 0.2)),
+                             breaks = scales::pretty_breaks(n = 4)) +
+          scale_fill_gradientn(
+            colours = colorRampPalette(c("#A80022", "#005C9A"))(100),
+            name = "Adj p")
+        print(d)
+        dev.off()
+      }
+    }
+    return(clusterResult_df)
+  } else {
+    return(NULL)
+  }
+})
+```
+  
+# MitoCartaLocation
+```{r MitoLoc, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+MitoCartaLocation_FGSEA_BrainEV = analyzeContrastFGSEA(
+    contrastEntrez_BrainEV, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_BrainEVData,
+    gene_setsMito, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "MitochondrialLocation", 
+    out_dir = paste0(outputDirBrainEV, "MitoLocation/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 2750, 
+    heightValue = 4500,
+    base_size = 30,
+    rangeX = c(-1, 0))
+
+MitoCartaLocationAbundance_BrainEV = analyzeCuratedAbundance(
+  sigProt = sigProt_BrainEV_RAW, 
+  gene_sets = gene_setsMito, 
+  translator = contrastsTranslator_BrainEV,
+  term2Plot = "MIM", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 3, 
+  gene_sets_Title = "MitochondrialLocation",
+  out_dir  = paste0(outputDirBrainEV, "MitoLocation/"),
+  legendSize = 80,
+  is_log2 = FALSE)
+
+MitoCartaLocation_FGSEA_HumanEV = analyzeContrastFGSEA(
+    contrastEntrez_Human, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_HumanData,
+    gene_setsMito, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "MitochondrialLocation", 
+    out_dir = paste0(outputDirHuman, "MitoLocation/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = MitoCartaLocation_FGSEA_HumanEV, 
+  out_dir = paste0(outputDirHuman, "MitoLocation/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =70,
+  widthVal = 2000, 
+  heightVal = 4000
+)
+
+MitoCartaLocation_HumanEV = analyzeCuratedAbundance(
+  sigProt = sigProt_HumanEV_RAW, 
+  gene_sets = gene_setsMito, 
+  translator = contrastsTranslator_HumanEV,
+  term2Plot = "MIM", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 10, 
+  min_threshold = 10, 
+  gene_sets_Title = "MitochondrialLocation",
+  out_dir  = paste0(outputDirHuman, "MitoLocation/"),
+  legendSize = 40,
+  is_log2 = FALSE)
+
+pre_term2gene_proteomicsLocalizationDb = stack(gene_setsMito)
+term2gene_proteomicsLocalizationDb = data.frame(
+  term = pre_term2gene_proteomicsLocalizationDb$ind,
+  gene = as.character(pre_term2gene_proteomicsLocalizationDb$values)
+)
+MitoCartaLocationEnrich_mEV = lapply(names(metaDataSetsEntrez), function(clusterName) {
+  clusterData = as.character(metaDataSetsEntrez[[clusterName]])
+  clusterResult = enricher(
+    gene = clusterData, 
+    TERM2GENE = term2gene_proteomicsLocalizationDb,
+    universe = as.character(universe_ENTREZ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "fdr",
+    minGSSize = 3,
+    maxGSSize = 300000
+  )
+  if (!is.null(clusterResult) && nrow(clusterResult@result) > 0) {
+    clusterResult_df = as.data.frame(clusterResult@result)
+    
+    write.csv(clusterResult_df, paste0(outputDirMetaAnalysis, 
+                                       "MitoLocation/", 
+                                       clusterName, "_enrichment.csv"), 
+              row.names = FALSE)
+    clusterResultSig = subset(clusterResult_df, p.adjust < 0.05)
+    
+    if (nrow(clusterResultSig) > 0) {
+      clusterResultSig$GeneRatio_num = sapply(clusterResultSig$GeneRatio, function(x) {
+        eval(parse(text = x))
+      })
+      clusterResultSig_filtered = subset(clusterResultSig, GeneRatio_num > 0.00)
+      clusterResultPlot = clusterResult
+      clusterResultPlot@result = clusterResultSig_filtered
+      if (nrow(clusterResultSig_filtered) > 0) {
+        dir2save = paste0(outputDirMetaAnalysis, 
+                          "MitoLocation/", 
+                          clusterName, "_enrichment.tiff")
+        tiff(filename = dir2save, width = 3000, height = 1800, res = 300)
+        d = dotplot(clusterResultPlot,
+                    showCategory = 20,
+                    title = paste("Enrichment -", clusterName)) +
+          aes(fill = p.adjust) +
+          geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 1) + 
+          labs(title = NULL) +
+          theme_void() +
+          theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+                axis.text.y = element_text(size = 35, hjust = 0.5,
+                                           margin = margin(r = 10)),
+                axis.text.x = element_text(hjust = 0.5, size = 20),
+                axis.title.x = element_text(size = 25, face = "bold",
+                                            margin = margin(t=5)),
+                title = element_text(size = 45, face = "bold"),
+                legend.text = element_text(size = 20),
+                legend.title = element_text(size = 25, hjust = 0.5,),
+                legend.position = "right",
+                legend.box.just = "center",
+                legend.title.align = 0.5,
+                legend.spacing.y = unit(0.5, "cm"),
+                #legend.box.spacing = unit(1, "cm"),
+                #legend.key.height = unit(1.5, "cm"),
+                axis.ticks = element_line(color = "black", linewidth = 1),
+                panel.border = element_rect(color = "black", fill = NA,
+                                            linewidth = 2),
+                plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+          guides(
+            fill = guide_colorbar(
+            title = "Adj p", 
+            title.hjust = 0.5,
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            barwidth = unit(0.4, "cm"),
+            barheight = unit(2.8, "cm"),
+            label.theme = element_text(hjust = 0.5)
+          ),
+          size = guide_legend(
+            title = "Counts",
+            title.position = "top",
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            ncol = 1,
+            label.theme = element_text(hjust = 0.5)
+          )) +
+          #annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, fill = "dimgray", alpha = 0.1) +
+          #annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "#870052", alpha = 0.1) +
+          scale_size(range = c(12, 22),
+                     breaks = function(x) unique(round(seq(min(x), max(x),
+                                                           length.out = 4)))) +
+          scale_y_discrete(labels = function(x) str_wrap(x, width = 10)) + 
+          scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0.05, 0.1)),
+                             breaks = scales::pretty_breaks(n = 4)) +
+          scale_fill_gradientn(
+            colours = colorRampPalette(c("#A80022", "#005C9A"))(100),
+            name = "Adj p")
+        print(d)
+        dev.off()
+      }
+    }
+    return(clusterResult_df)
+  } else {
+    return(NULL)
+  }
+})
+```
+ 
+# MitoCartaPath
+```{r MitoPath, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+MitoCartaPath_FGSEA_BrainEV = analyzeContrastFGSEA(
+    contrastEntrez_BrainEV, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_BrainEVData,
+    gene_setsMitoPath, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "MitochondriaPathway", 
+    out_dir = paste0(outputDirBrainEV, "MitoPathway/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 2000, 
+    heightValue = 4500,
+    base_size = 25,
+    rangeX = c(-1, 0))
+
+MitoCartaPathAbundance_BrainEV = analyzeCuratedAbundance(
+  sigProt = sigProt_BrainEV_RAW, 
+  gene_sets = gene_setsMitoPath, 
+  translator = contrastsTranslator_BrainEV,
+  term2Plot = "OXPHOS", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 4, 
+  min_threshold =4, 
+  gene_sets_Title = "MitochondriaPathway",
+  out_dir  = paste0(outputDirBrainEV, "MitoPathway/"),
+  legendSize = 20,
+  is_log2 = FALSE)
+
+MitoCartaPath_FGSEA_HumanEV = analyzeContrastFGSEA(
+    contrastEntrez_Human, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_HumanData,
+    gene_setsMitoPath, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "MitochondriaPathway", 
+    out_dir = paste0(outputDirHuman, "MitoPathway/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = MitoCartaPath_FGSEA_HumanEV, 
+  out_dir = paste0(outputDirHuman, "MitoPathway/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs",
+  wrap_width =30,
+  widthVal = 2500, 
+  heightVal = 4000
+)
+
+MitoCartaPath_HumannEV = analyzeCuratedAbundance(
+  sigProt = sigProt_HumanEV_RAW, 
+  gene_sets = gene_setsMitoPath, 
+  translator = contrastsTranslator_HumanEV,
+  term2Plot = "OXPHOS", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 2.9, 
+  min_threshold = 3, 
+  gene_sets_Title = "MitochondriaPathway",
+  out_dir  = paste0(outputDirHuman, "MitoPathway/"),
+  legendSize = 30,
+  is_log2 = FALSE)
+
+pre_term2gene_proteomicsLocalizationDb = stack(gene_setsMitoPath)
+term2gene_proteomicsLocalizationDb = data.frame(
+  term = pre_term2gene_proteomicsLocalizationDb$ind,
+  gene = as.character(pre_term2gene_proteomicsLocalizationDb$values)
+)
+MitoCartaPathnEnrich_mEV = lapply(names(metaDataSetsEntrez), function(clusterName) {
+  clusterData = as.character(metaDataSetsEntrez[[clusterName]])
+  clusterResult = enricher(
+    gene = clusterData, 
+    TERM2GENE = term2gene_proteomicsLocalizationDb,
+    universe = as.character(universe_ENTREZ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "fdr",
+    minGSSize = 3,
+    maxGSSize = 300000
+  )
+  if (!is.null(clusterResult) && nrow(clusterResult@result) > 0) {
+    clusterResult_df = as.data.frame(clusterResult@result)
+    
+    write.csv(clusterResult_df, paste0(outputDirMetaAnalysis, 
+                                       "MitoPathway/", 
+                                       clusterName, "_enrichment.csv"), 
+              row.names = FALSE)
+    clusterResultSig = subset(clusterResult_df, p.adjust < 0.05)
+    
+    if (nrow(clusterResultSig) > 0) {
+      clusterResultSig$GeneRatio_num = sapply(clusterResultSig$GeneRatio, function(x) {
+        eval(parse(text = x))
+      })
+      clusterResultSig_filtered = subset(clusterResultSig, GeneRatio_num > 0.00)
+      clusterResultPlot = clusterResult
+      clusterResultPlot@result = clusterResultSig_filtered
+      if (nrow(clusterResultSig_filtered) > 0) {
+        dir2save = paste0(outputDirMetaAnalysis, 
+                          "MitoPathway/", 
+                          clusterName, "_enrichment.tiff")
+        tiff(filename = dir2save, width = 2700, height = 2000, res = 300)
+        d = dotplot(clusterResultPlot,
+                    showCategory = 20,
+                    title = paste("Enrichment -", clusterName)) +
+          aes(fill = p.adjust) +
+          geom_hline(yintercept = 0, linetype = "dashed", color = "gray50", linewidth = 1) + 
+          labs(title = NULL) +
+          theme_void() +
+          theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+                axis.text.y = element_text(size = 38, hjust = 0.5,
+                                           margin = margin(r = 10)),
+                axis.text.x = element_text(hjust = 0.5, size = 20),
+                axis.title.x = element_text(size = 25, face = "bold",
+                                            margin = margin(t=5)),
+                title = element_text(size = 45, face = "bold"),
+                legend.text = element_text(size = 20),
+                legend.title = element_text(size = 25, hjust = 0.5,),
+                legend.position = "right",
+                legend.box.just = "center",
+                legend.title.align = 0.5,
+                legend.spacing.y = unit(0.5, "cm"),
+                #legend.box.spacing = unit(1, "cm"),
+                #legend.key.height = unit(1.5, "cm"),
+                axis.ticks = element_line(color = "black", linewidth = 1),
+                panel.border = element_rect(color = "black", fill = NA,
+                                            linewidth = 2),
+                plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+          guides(
+            fill = guide_colorbar(
+            title = "Adj p", 
+            title.hjust = 0.5,
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            barwidth = unit(0.4, "cm"),
+            barheight = unit(2.8, "cm"),
+            label.theme = element_text(hjust = 0.5)
+          ),
+          size = guide_legend(
+            title = "Counts",
+            title.position = "top",
+            title.theme = element_text(size = 20, hjust = 0.5, face = "bold"),
+            ncol = 1,
+            label.theme = element_text(hjust = 0.5)
+          )) +
+          #annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf, fill = "dimgray", alpha = 0.1) +
+          #annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf, fill = "#870052", alpha = 0.1) +
+          scale_size(range = c(12, 22),
+                     breaks = function(x) unique(round(seq(min(x), max(x),
+                                                           length.out = 4)))) +
+          scale_y_discrete(labels = function(x) str_wrap(x, width = 10)) + 
+          scale_x_continuous(limits = c(0, NA), expand = expansion(mult = c(0.1, 0.2)),
+                             breaks = scales::pretty_breaks(n = 4)) +
+          scale_fill_gradientn(
+            colours = colorRampPalette(c("#A80022", "#005C9A"))(100),
+            name = "Adj p")
+        print(d)
+        dev.off()
+      }
+    }
+    return(clusterResult_df)
+  } else {
+    return(NULL)
+  }
+})
+
+focusTerm <- "Protein import, sorting and homeostasis"
+entrezTerm <- gene_setsMitoPath[[focusTerm]]
+proteinTerm <- contrastsTranslator_BrainEV$`10090_UNIPROT`[
+  contrastsTranslator_BrainEV$`10090_ENTREZID` %in% entrezTerm 
+]
+SE_MitoPath_filtrado <- sigProt_BrainEV_DEPPA[rowData(sigProt_BrainEV_DEPPA)$ID %in% proteinTerm, ]
+dir2save = paste0(outputDirMetaAnalysis, "HeatMap_enrichment_MiteCluster1.tiff")
+tiff(filename = dir2save, width = 4000, height = 4200, res = 300)
+heatmap_MitoPath <- plot_heatmap(
+  SE_MitoPath_filtrado, 
+  type = "centered",
+  kmeans = TRUE,
+  col_limit = 140,
+  col = colLegend,
+  show_row_names = TRUE,
+  row_font_size = 8,
+  col_font_size = 14, 
+  indicate = c("Group"),
+  show_column_names = FALSE,
+  plot = TRUE,
+  show_row_dend = FALSE,
+  cluster_columns = FALSE,
+  seed = 07021995,
+  custom_anno_cols = list(Group = pca_colors_Brain), 
+  custom_anno_labels = list(Group = pca_labels_Brain)
+)
+
+legendHeatmap_MetaEV = ComplexHeatmap::Legend(
+  title = NULL, 
+  col_fun = colLegend,
+  at = c(-2, -1, 0, 1, 2),
+  labels_gp = grid::gpar(fontsize = 11),
+  title_gp = grid::gpar(fontsize = 12, fontface = "bold"),
+  direction = "horizontal",
+  grid_height = unit(8, "mm"),
+  grid_width  = unit(15, "mm")
+)
+
+separatorLeg = ComplexHeatmap::Legend(title = " ",
+                                   at = " ",
+                                   legend_gp = grid::gpar(fill = "white",
+                                                          col = "white"),
+                                   border = "white",
+                                   grid_height = unit(1, "cm"),
+                                   grid_width = unit(0, "cm"))
+
+heatmap_MetaEV_Print <- ComplexHeatmap::draw(heatmap_MitoPath, 
+                                              show_heatmap_legend = FALSE,
+                                              show_annotation_legend = TRUE, 
+                                              annotation_legend_list =
+                                                list(separatorLeg, legendHeatmap_MetaEV), 
+                                              annotation_legend_side = "right")
+print(heatmap_MetaEV_Print)
+dev.off()
+```
+
+# MitoCartaPathDetail
+```{r MitoPathDet, echo=FALSE}
+BiocParallel::register(BiocParallel::SerialParam())
+SubMitoCartaPathDet_FGSEA_BrainEV = analyzeContrastFGSEA(
+    contrastEntrez_BrainEV, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_BrainEVData,
+    gene_setsMitoPath2, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "MitochondriaPathway2", 
+    out_dir = paste0(outputDirBrainEV, "MitoPathway2/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+SubMitoCartaPathDetAbundance_BrainEV = analyzeCuratedAbundance(
+  sigProt = sigProt_BrainEV_RAW, 
+  gene_sets = gene_setsMitoPath2, 
+  translator = contrastsTranslator_BrainEV,
+  term2Plot = "CI subunits", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 0, 
+  gene_sets_Title = "MitochondriaPathway2",
+  out_dir  = paste0(outputDirBrainEV, "MitoPathway2/"),
+  legendSize = 2,
+  is_log2 = FALSE)
+
+SubMitoCartaPathDet_FGSEA_HumanEV = analyzeContrastFGSEA(
+    contrastEntrez_Human, 
+    ESContrastSuffix = "_ESENTREZID", 
+    contrastList_HumanData,
+    gene_setsMitoPath2, 
+    organismName = "Mus musculus",
+    padjval = 0.05, 
+    gene_sets_Title = "MitochondriaPathway2", 
+    out_dir = paste0(outputDirHuman, "MitoPathway2/"), 
+    nPermSimple = 100000, 
+    eps = 0.00000001,
+    widthValue = 3000, 
+    heightValue = 4250,
+    base_size = 10,
+    rangeX = c(-1, 0))
+
+contrasts2plot = c("EVsF6_vs_EVsmEV_ESENTREZID", 
+                   "EVsF7_vs_EVsmEV_ESENTREZID", 
+                   "EVsF8_vs_EVsmEV_ESENTREZID")
+
+columnNames = c(" hu AD F6", " hu AD F7", " hu AD F8")
+
+generatePresenceHeatmap(
+  resultList = SubMitoCartaPathDet_FGSEA_HumanEV, 
+  out_dir = paste0(outputDirHuman, "MitoPathway2/"),
+  contrasts = contrasts2plot,
+  pAdjustCutoff = 0.05,
+  col_labels = columnNames,
+  bottom_group_label = "versus ms mitoEVs"
+)
+
+SubMitoCartaPathDetAbundance_HumannEV = analyzeCuratedAbundance(
+  sigProt = sigProt_HumanEV_RAW, 
+  gene_sets = gene_setsMitoPath2, 
+  translator = contrastsTranslator_HumanEV,
+  term2Plot = "CI subunits", 
+  sigProtID = "10090_SYMBOL", 
+  gene_setsID = "10090_ENTREZID", 
+  label_threshold = 3, 
+  min_threshold = 0, 
+  gene_sets_Title = "MitochondriaPathway2",
+  out_dir  = paste0(outputDirHuman, "MitoPathway2/"),
+  legendSize = 2,
+  is_log2 = FALSE)
+
+pre_term2gene_proteomicsLocalizationDb = stack(gene_setsMitoPath2)
+term2gene_proteomicsLocalizationDb = data.frame(
+  term = pre_term2gene_proteomicsLocalizationDb$ind,
+  gene = as.character(pre_term2gene_proteomicsLocalizationDb$values)
+)
+MitoCartaPathDetEnrich_mEV = lapply(names(metaDataSetsEntrez), function(clusterName) {
+  clusterData = as.character(metaDataSetsEntrez[[clusterName]])
+  clusterResult = enricher(
+    gene = clusterData, 
+    TERM2GENE = term2gene_proteomicsLocalizationDb,
+    universe = as.character(universe_ENTREZ),
+    pvalueCutoff = 0.05,
+    pAdjustMethod = "fdr",
+    minGSSize = 3,
+    maxGSSize = 300000
+  )
+  if (!is.null(clusterResult) && nrow(clusterResult@result) > 0) {
+    clusterResult_df = as.data.frame(clusterResult@result)
+    
+    write.csv(clusterResult_df, paste0(outputDirMetaAnalysis, 
+                                       "MitoPathway2/", 
+                                       clusterName, "_enrichment.csv"), 
+              row.names = FALSE)
+    clusterResultSig = subset(clusterResult_df, p.adjust < 0.05)
+    
+    if (nrow(clusterResultSig) > 0) {
+      clusterResultSig$GeneRatio_num = sapply(clusterResultSig$GeneRatio, function(x) {
+        eval(parse(text = x))
+      })
+      clusterResultSig_filtered = subset(clusterResultSig, GeneRatio_num > 0.00)
+      clusterResultPlot = clusterResult
+      clusterResultPlot@result = clusterResultSig_filtered
+      if (nrow(clusterResultSig_filtered) > 0) {
+        dir2save = paste0(outputDirMetaAnalysis, 
+                          "MitoPathway2/", 
+                          clusterName, "_enrichment.tiff")
+        tiff(filename = dir2save, width = 4000, height = 4250, res = 300)
+        d = dotplot(clusterResultPlot,
+                    showCategory = 20,
+                    title = paste("Enrichment -", clusterName)) +
+          aes(fill = p.adjust) +
+          labs(title = "Cell Type") +
+          theme_void() +
+          theme(plot.title = element_text(hjust = 0.5, margin = margin(b = 20)),
+                axis.text.y = element_text(size = 45, hjust = 1,
+                                           margin = margin(r = 0.5)),
+                axis.text.x = element_text(size = 30),
+                axis.title.x = element_text(size = 45, face = "bold",
+                                            margin = margin(t=5)),
+                title = element_text(size = 45, face = "bold"),
+                legend.text = element_text(size = 35),
+                legend.title = element_text(size = 35, margin = margin(b = 20)),
+                legend.position = "right",
+                legend.box.just = "center",
+                legend.title.align = 0.5,
+                legend.spacing.y = unit(1.5, "cm"),
+                legend.box.spacing = unit(1, "cm"),
+                legend.key.height = unit(1.5, "cm"),
+                plot.margin = unit(c(1, 1, 1, 1), "cm")) +
+          guides(color = guide_colorbar(
+            title = "Adj p", 
+            title.hjust = 0.5,
+            label.theme = element_text(hjust = 0.5)
+          ),
+          size = guide_legend(
+            title = "Counts",
+            title.position = "top",
+            title.hjust = 0.5,
+            ncol = 1,
+            label.theme = element_text(hjust = 0.5)
+          )) +
+          annotate("rect", xmin = -Inf, xmax = 0, ymin = -Inf, ymax = Inf,
+                   fill = "dimgray", alpha = 0.1) +
+          annotate("rect", xmin = 0, xmax = Inf, ymin = -Inf, ymax = Inf,
+                   fill = "#870052", alpha = 0.1) +
+          coord_cartesian(clip = "off") +
+          scale_size(range = c(15, 25)) +
+          scale_y_discrete(labels = function(x) str_wrap(x, width = 70)) + 
+          scale_x_continuous(limits = c(0, 0.5), breaks = seq(0, 0.5, 0.25)) +
+          scale_fill_gradientn(
+            colours = colorRampPalette(c("darkgreen", "#4F0433"))(100),
+            name = "Adj p")
+        print(d)
+        dev.off()
+      }
+    }
+    return(clusterResult_df)
+  } else {
+    return(NULL)
+  }
+})
+```

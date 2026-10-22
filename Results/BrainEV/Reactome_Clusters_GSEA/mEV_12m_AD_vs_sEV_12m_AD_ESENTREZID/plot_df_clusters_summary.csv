@@ -1,0 +1,22 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+11,2,2.46785005113527,-1.78963585258831,1,"Axon guidance","Axon guidance"
+12,2,1.47342298247586,-1.73803846296867,0.909090909090909,"Extra-nuclear estrogen signaling","Extra-nuclear estrogen
+signaling"
+7,3,1.99631541758132,-1.71671002165615,0.865310846560847,"Cell cycle","Cell cycle"
+6,3,1.52283784278952,-1.685135411256,0.833333333333333,"Mitotic metaphase and anaphase","Mitotic metaphase
+and anaphase"
+2,5,1.87335727180701,1.50363768948324,0.775416666666667,"Tp53 regulates metabolic genes","Tp53 regulates
+metabolic genes"
+1,6,1.50563678246554,-1.74599682982932,0.702717373499107,"Fc epsilon receptor (fceri) signaling","Fc epsilon receptor
+(fceri) signaling"
+5,3,2.4399399237387,-1.68522557916416,0.638418079096045,"Vesicle-mediated transport","Vesicle-mediated transport"
+4,4,5.31952938436042,1.64663208932895,0.55528083028083,"Aerobic respiration and respiratory electron transport","Aerobic respiration and
+respiratory electron transport"
+9,3,1.89750192614555,-1.7448195365821,0.520250582750583,"Pip3 activates akt signaling","Pip3 activates
+akt signaling"
+10,3,1.37266276190394,-1.69320405830574,0.461434266031967,"Antigen processing: ubiquitination & proteasome degradation","Antigen processing: ubiquitination
+& proteasome degradation"
+8,3,3.31071541804514,-1.88658483623566,0.42956465237167,"Signaling by wnt","Signaling by
+wnt"
+3,4,2.21020517743136,-1.82058731426467,0.336367574853182,"Signaling by receptor tyrosine kinases","Signaling by receptor
+tyrosine kinases"

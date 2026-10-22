@@ -1,0 +1,18 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+4,8,21.9650990955433,0.45,0.537467578552103,"Proton motive force-driven mitochondrial atp synthesis","Proton motive force-driven
+mitochondrial atp synthesis"
+3,9,21.982603863354,0.390740740740741,0.521988239334744,"Oxidative phosphorylation","Oxidative phosphorylation"
+6,6,16.3233125154964,0.45,0.46844405269647,"Ribonucleotide biosynthetic process","Ribonucleotide biosynthetic
+process"
+1,14,18.3695321491745,0.457142857142857,0.424560545427656,"Purine ribonucleoside triphosphate biosynthetic process","Purine ribonucleoside triphosphate
+biosynthetic process"
+2,13,5.67937477048694,0.283333333333333,0.405948015646851,"Proton transmembrane transport","Proton transmembrane
+transport"
+5,7,16.2931401871754,0.292857142857143,0.314516917307705,"Mitochondrial respirasome assembly","Mitochondrial respirasome
+assembly"
+9,3,25.2396312295472,0.555555555555556,0.28498554624204,"Energy derivation by oxidation of organic compounds","Energy derivation by oxidation
+of organic compounds"
+7,5,12.7892221669985,0.473333333333333,0.228275764838408,"Purine-containing compound biosynthetic process","Purine-containing compound
+biosynthetic process"
+8,4,10.2519773777281,0.35,0.193543628691533,"Nadh dehydrogenase complex assembly","Nadh dehydrogenase
+complex assembly"

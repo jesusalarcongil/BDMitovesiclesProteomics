@@ -1,0 +1,6 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+3,4,1.75816424560951,0.0847107438016529,0.936363330278649,"Signaling receptor activity","Signaling receptor
+activity"
+2,10,4.95587635092363,0.207438016528926,0.816893053792598,"Secondary active transmembrane transporter activity","Secondary active transmembrane
+transporter activity"
+1,20,5.59516821131702,0.0933884297520661,0.553193136966583,"Symporter activity","Symporter activity"

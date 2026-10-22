@@ -1,0 +1,21 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+6,2,6.39076142404491,1.54099097480445,0.652259751975349,"Transmembrane transporter complex","Transmembrane transporter
+complex"
+7,2,5.16598996932844,1.17841259460665,0.57087432475618,"Intracellular membrane-bounded organelle","Intracellular membrane-bounded
+organelle"
+2,3,6.39076142404491,1.37961206240577,0.564507925099297,"Catalytic complex","Catalytic complex"
+10,2,5.25269796095176,1.60427404573569,0.56150509741495,"Respiratory chain complex","Respiratory chain
+complex"
+9,2,5.25269796095176,1.60469187005497,0.512562240893157,"Oxidoreductase complex","Oxidoreductase complex"
+8,2,4.95151214621956,1.17454362882659,0.483218310511145,"Membrane-bounded organelle","Membrane-bounded organelle"
+3,3,2.29049265423509,1.49733317141264,0.471596295082649,"Cytochrome complex","Cytochrome complex"
+4,3,6.39076142404491,1.63025052336675,0.33008958047162,"Mitochondrial inner membrane","Mitochondrial inner
+membrane"
+11,2,6.39076142404491,1.29117726728187,0.311329741951988,"Organelle membrane","Organelle membrane"
+12,2,6.39076142404491,1.61267284347113,0.210898272454266,"Organelle inner membrane","Organelle inner
+membrane"
+1,4,1.93688127852208,0.623919630132608,0.188054821318984,"Coated vesicle membrane","Coated vesicle
+membrane"
+5,3,3.44639603712176,1.38332235624474,0.160469721349287,"Mitochondrion","Mitochondrion"
+13,2,1.7186917246456,1.47096046295765,0.102193950461834,"Mitochondrial protein-containing complex","Mitochondrial protein-containing
+complex"

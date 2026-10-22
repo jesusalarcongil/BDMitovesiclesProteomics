@@ -1,0 +1,18 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+6,2,6.46308099743939,1.44486916329942,0.652259751975349,"Transmembrane transporter complex","Transmembrane transporter
+complex"
+7,2,6.46308099743939,1.24060921111798,0.57087432475618,"Intracellular membrane-bounded organelle","Intracellular membrane-bounded
+organelle"
+5,3,4.16546055960317,1.48249271269904,0.505296531742911,"Respiratory chain complex","Respiratory chain
+complex"
+8,2,6.46308099743939,1.2346917665708,0.483218310511145,"Membrane-bounded organelle","Membrane-bounded organelle"
+3,4,5.28256708913673,1.32880197890315,0.426763127539191,"Catalytic complex","Catalytic complex"
+10,2,1.31613497110541,1.31986943869394,0.389497645785713,"Outer membrane","Outer membrane"
+4,3,4.39917014057621,1.48359156771042,0.373443921340165,"Oxidoreductase complex","Oxidoreductase complex"
+9,2,5.27918244161856,1.17125720386694,0.362596295471374,"Cytoplasm","Cytoplasm"
+11,2,6.46308099743939,1.26064168721129,0.311329741951988,"Organelle membrane","Organelle membrane"
+1,5,2.29412274325731,1.2594747150542,0.308154620415904,"Mitochondrial matrix","Mitochondrial matrix"
+12,2,6.46308099743939,1.50350710696907,0.210898272454266,"Organelle inner membrane","Organelle inner
+membrane"
+2,5,5.62344897722327,0.856665039180225,0.158612711773898,"Mitochondrial inner membrane","Mitochondrial inner
+membrane"

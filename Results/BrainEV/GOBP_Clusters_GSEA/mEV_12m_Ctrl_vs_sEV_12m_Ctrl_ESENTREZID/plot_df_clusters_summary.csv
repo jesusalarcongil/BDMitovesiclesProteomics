@@ -1,0 +1,20 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+6,4,5.43342771945602,1.26418117684652,0.57702801530422,"Nucleobase-containing compound biosynthetic process","Nucleobase-containing compound
+biosynthetic process"
+4,8,5.19420225472019,1.60434806466155,0.529004530905763,"Cellular respiration","Cellular respiration"
+3,10,5.68017345140555,1.56056143602366,0.522167953703827,"Atp metabolic process","Atp metabolic
+process"
+10,2,5.88481536215532,1.5533459231803,0.505098959006006,"Purine-containing compound biosynthetic process","Purine-containing compound
+biosynthetic process"
+5,5,3.58256389945694,1.37177510501287,0.473859674070183,"Nucleobase-containing small molecule metabolic process","Nucleobase-containing small molecule
+metabolic process"
+7,4,5.88481536215532,1.50709599803283,0.471210539892569,"Ribose phosphate biosynthetic process","Ribose phosphate
+biosynthetic process"
+2,11,5.12093410783772,1.45619869328538,0.432537236094024,"Monoatomic cation transmembrane transport","Monoatomic cation
+transmembrane transport"
+1,12,5.75743729011147,1.56125764670685,0.429085148213283,"Purine ribonucleoside triphosphate metabolic process","Purine ribonucleoside triphosphate
+metabolic process"
+8,4,4.56063546754917,1.35242780722853,0.330697581368495,"Organophosphate biosynthetic process","Organophosphate biosynthetic
+process"
+9,3,5.88481536215532,1.62792176737565,0.28498554624204,"Energy derivation by oxidation of organic compounds","Energy derivation by oxidation
+of organic compounds"

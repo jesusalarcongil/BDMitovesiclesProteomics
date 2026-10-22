@@ -1,0 +1,22 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+9,2,4.47043192157909,1.32880303795306,0.589276516736917,"Nucleobase-containing compound biosynthetic process","Nucleobase-containing compound
+biosynthetic process"
+3,8,5.95023944823752,1.64537467794384,0.537467578552103,"Proton motive force-driven mitochondrial atp synthesis","Proton motive force-driven
+mitochondrial atp synthesis"
+10,2,5.95023944823752,1.55210347835362,0.529374062087769,"Carbohydrate derivative biosynthetic process","Carbohydrate derivative
+biosynthetic process"
+2,8,5.50979299070029,1.68048447636947,0.529004530905763,"Oxidative phosphorylation","Oxidative phosphorylation"
+11,2,5.95023944823752,1.59320737067894,0.505098959006006,"Purine-containing compound biosynthetic process","Purine-containing compound
+biosynthetic process"
+4,8,5.89447555101433,1.50257923525464,0.5016718960372,"Monoatomic cation transmembrane transport","Monoatomic cation
+transmembrane transport"
+5,4,5.95023944823752,1.62719114191615,0.463707332758613,"Ribose phosphate biosynthetic process","Ribose phosphate
+biosynthetic process"
+1,14,5.95023944823752,1.61119379182869,0.424560545427656,"Nucleoside triphosphate biosynthetic process","Nucleoside triphosphate
+biosynthetic process"
+7,3,3.37294158422411,1.29045759666978,0.390101296860772,"Cellular metabolic process","Cellular metabolic
+process"
+6,4,4.37308460740856,1.37094366098666,0.330697581368495,"Organophosphate biosynthetic process","Organophosphate biosynthetic
+process"
+8,3,5.95023944823752,1.70700351080484,0.28498554624204,"Energy derivation by oxidation of organic compounds","Energy derivation by oxidation
+of organic compounds"

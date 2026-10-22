@@ -1,0 +1,31 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+6,6,2.82791263328788,0.068241469816273,0.57089686307598,"Establishment of organelle localization","Establishment of
+organelle localization"
+11,4,1.91276764542127,0.0153543307086614,0.564754192061724,"Establishment of mitochondrion localization","Establishment of
+mitochondrion localization"
+14,3,1.49736575881793,0.0813648293963255,0.555562748747733,"Ubiquitin-dependent protein catabolic process","Ubiquitin-dependent protein
+catabolic process"
+10,4,2.64807381500663,0.100393700787402,0.521429105883477,"Regulation of transferase activity","Regulation of
+transferase activity"
+15,3,1.56116948882081,0.0346456692913386,0.502671743626501,"Organelle transport along microtubule","Organelle transport
+along microtubule"
+3,8,1.60966936377453,0.113188976377953,0.466074708530616,"Regulation of axonogenesis","Regulation of
+axonogenesis"
+4,8,2.79316612308624,0.0446850393700787,0.437942854819453,"Regulation of kinase activity","Regulation of
+kinase activity"
+7,6,2.00506774610735,0.0559055118110236,0.390891153693535,"Microtubule-based process","Microtubule-based process"
+12,4,2.62243521477794,0.15748031496063,0.388683346720013,"Protein modification process","Protein modification
+process"
+5,7,2.34625813242724,0.0852643419572553,0.368708370369514,"Protein phosphorylation","Protein phosphorylation"
+16,3,2.33556768746529,0.145931758530184,0.357342330935755,"Regulation of protein modification process","Regulation of protein
+modification process"
+8,6,2.02248146800243,0.101574803149606,0.339167208134848,"Regulation of phosphorylation","Regulation of
+phosphorylation"
+1,11,2.01037272218487,0.0866141732283465,0.304828011639438,"Synaptic vesicle recycling","Synaptic vesicle
+recycling"
+9,6,1.58823190782373,0.134645669291339,0.262012424517507,"Cellular component disassembly","Cellular component
+disassembly"
+13,4,1.53355882509131,0.140551181102362,0.228047489752661,"Regulation of cellular component biogenesis","Regulation of cellular
+component biogenesis"
+2,9,1.56806800427663,0.0829396325459318,0.161084557076449,"Ephrin receptor signaling pathway","Ephrin receptor
+signaling pathway"

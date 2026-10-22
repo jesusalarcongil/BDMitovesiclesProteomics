@@ -1,0 +1,12 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+2,4,4.66970752359379,0.0888030888030888,0.504400439366876,"Organic acid catabolic process","Organic acid
+catabolic process"
+1,5,3.58529659060867,0.202316602316602,0.487081627698917,"Small molecule metabolic process","Small molecule
+metabolic process"
+3,4,4.04516636508967,0.0637065637065637,0.480911947707075,"Fatty acid catabolic process","Fatty acid
+catabolic process"
+6,3,3.097629511291,0.115830115830116,0.375474695860672,"Cellular lipid catabolic process","Cellular lipid
+catabolic process"
+5,4,2.41757680715036,0.111969111969112,0.341432103350747,"Lipid oxidation","Lipid oxidation"
+4,4,2.02549594697514,0.0521235521235521,0.140327124261644,"Import into the mitochondrion","Import into
+the mitochondrion"

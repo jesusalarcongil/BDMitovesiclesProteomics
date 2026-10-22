@@ -1,0 +1,15 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+2,24,1.47126856318575,-1.66003926899377,0.96096837944664,"Assembly of the pre-replicative complex","Assembly of the
+pre-replicative complex"
+1,30,1.47308948807833,-1.66287527057772,0.948879626121005,"Uch proteinases","Uch proteinases"
+8,3,1.70983164140282,-1.64459809874694,0.88641975308642,"Cell cycle","Cell cycle"
+7,4,1.74357364201292,-1.72732246836922,0.787624834136462,"Mitotic metaphase and anaphase","Mitotic metaphase
+and anaphase"
+3,8,1.52420892632235,-1.67730617114301,0.711773940345369,"Keap1-nfe2l2 pathway","Keap1-nfe2l2 pathway"
+5,7,1.45858585891093,-1.65113940241696,0.649434541960145,"Neddylation","Neddylation"
+4,7,1.55140100358595,-1.68940152141705,0.527681062979091,"Beta-catenin independent wnt signaling","Beta-catenin independent
+wnt signaling"
+6,6,1.6166570786679,-1.64019518061617,0.43988389249059,"Signaling by wnt","Signaling by
+wnt"
+9,3,1.41737843528531,-1.38071010540993,0.273979511827109,"Adaptive immune system","Adaptive immune
+system"

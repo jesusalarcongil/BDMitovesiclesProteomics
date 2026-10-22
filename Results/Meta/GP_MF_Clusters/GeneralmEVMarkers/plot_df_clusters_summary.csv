@@ -1,0 +1,7 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+1,12,9.42072896558742,0.337962962962963,0.738594944513465,"Oxidoreduction-driven active transmembrane transporter activity","Oxidoreduction-driven active transmembrane
+transporter activity"
+3,3,3.18479678883338,0.0864197530864197,0.439449150741476,"Iron-sulfur cluster binding","Iron-sulfur cluster
+binding"
+2,4,8.60098617515985,0.208333333333333,0.266558808859515,"Electron transfer activity","Electron transfer
+activity"

@@ -1,0 +1,14 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+8,2,2.77596308195094,1.79265329678516,0.56150509741495,"Respiratory chain complex","Respiratory chain
+complex"
+7,2,2.41906277280642,1.76506672426346,0.512562240893157,"Oxidoreductase complex","Oxidoreductase complex"
+3,5,2.67279808108007,-1.67081350818833,0.470091973695453,"Distal axon","Distal axon"
+4,4,2.09335906746829,-1.42381496444906,0.443598381755678,"Neuron projection","Neuron projection"
+2,6,3.1945400009765,-1.50044259625297,0.415983236037018,"Synapse","Synapse"
+5,3,6.07572071393812,2.19281132299192,0.33008958047162,"Mitochondrial inner membrane","Mitochondrial inner
+membrane"
+9,2,4.7039242482131,1.38813386610266,0.311329741951988,"Organelle membrane","Organelle membrane"
+10,2,6.07572071393812,2.06083189211334,0.210898272454266,"Organelle inner membrane","Organelle inner
+membrane"
+1,7,1.98355599614674,-1.46030285090143,0.189101731263353,"Non-membrane-bounded organelle","Non-membrane-bounded organelle"
+6,3,4.01398207480655,1.8553010643287,0.161930401949181,"Mitochondrion","Mitochondrion"

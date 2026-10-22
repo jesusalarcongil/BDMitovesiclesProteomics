@@ -1,0 +1,15 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+5,2,3.96941196077681,-1.62165730600596,0.652259751975349,"Transmembrane transporter complex","Transmembrane transporter
+complex"
+7,2,3.94966231474915,-1.6973920552234,0.56150509741495,"Respiratory chain complex","Respiratory chain
+complex"
+6,2,2.90716044293436,-1.6650959571051,0.512562240893157,"Oxidoreductase complex","Oxidoreductase complex"
+1,5,4.64165134987979,-1.56388296764058,0.477118596003549,"Protein-containing complex","Protein-containing complex"
+2,5,5.08654538297389,-1.69333282684257,0.272621367615865,"Mitochondrial inner membrane","Mitochondrial inner
+membrane"
+8,2,3.86640326604949,-1.53875622762226,0.232095435952794,"Organelle inner membrane","Organelle inner
+membrane"
+9,2,3.9041922614452,-1.32854812002417,0.165032684098077,"Mitochondrion","Mitochondrion"
+3,3,2.12986128918526,-1.62171757167276,0.159773659288502,"Ribosome","Ribosome"
+4,3,2.06521527323708,-1.61399746918041,0.117246760396522,"Mitochondrial protein-containing complex","Mitochondrial protein-containing
+complex"

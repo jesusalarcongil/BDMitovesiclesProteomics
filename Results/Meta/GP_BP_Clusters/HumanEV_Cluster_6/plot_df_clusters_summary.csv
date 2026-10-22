@@ -1,0 +1,28 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+2,10,6.84292537022076,0.169924812030075,0.522167953703827,"Atp biosynthetic process","Atp biosynthetic
+process"
+3,9,12.5140053666299,0.178780284043442,0.494119153722101,"Cellular respiration","Cellular respiration"
+11,4,2.71562609402884,0.0695488721804511,0.480911947707075,"Fatty acid beta-oxidation","Fatty acid
+beta-oxidation"
+7,7,2.71622090441335,0.0633727175080559,0.464018073413801,"Organic acid catabolic process","Organic acid
+catabolic process"
+13,3,8.79084802608393,0.308270676691729,0.439281613067621,"Small molecule metabolic process","Small molecule
+metabolic process"
+1,12,7.76587663952354,0.192982456140351,0.429085148213283,"Nucleoside phosphate biosynthetic process","Nucleoside phosphate
+biosynthetic process"
+10,4,4.23722867881304,0.0733082706766917,0.421688059288152,"Protein localization to mitochondrion","Protein localization
+to mitochondrion"
+6,7,4.54297411856208,0.164339419978518,0.395504307696129,"Organic acid metabolic process","Organic acid
+metabolic process"
+12,4,6.78728122206682,0.238721804511278,0.364842000321241,"Organophosphate biosynthetic process","Organophosphate biosynthetic
+process"
+8,7,6.54945141024862,0.15359828141783,0.362586891894455,"Purine-containing compound metabolic process","Purine-containing compound
+metabolic process"
+4,8,3.65827531492813,0.12312030075188,0.352506258280982,"Mitochondrial transmembrane transport","Mitochondrial transmembrane
+transport"
+14,3,19.5548396747468,0.318295739348371,0.28498554624204,"Energy derivation by oxidation of organic compounds","Energy derivation by oxidation
+of organic compounds"
+5,8,3.24485412287375,0.108082706766917,0.180776144007374,"Thioester metabolic process","Thioester metabolic
+process"
+9,5,2.55700090641499,0.0977443609022556,0.175565422669436,"Amino acid catabolic process","Amino acid
+catabolic process"

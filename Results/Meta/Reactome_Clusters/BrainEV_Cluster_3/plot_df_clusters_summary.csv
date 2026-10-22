@@ -1,0 +1,5 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+2,3,1.82796422940781,0.0666666666666667,0.698412698412698,"Class a/1 (rhodopsin-like receptors)","Class a/1
+(rhodopsin-like receptors)"
+1,5,3.98832167664389,0.164705882352941,0.318754578754579,"Slc-mediated transmembrane transport","Slc-mediated transmembrane
+transport"

@@ -1,0 +1,10 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+5,3,7.27292594112706,0.109452736318408,0.487834687525688,"Respiratory chain complex","Respiratory chain
+complex"
+3,5,3.28309902276263,0.211940298507463,0.429825561783348,"Catalytic complex","Catalytic complex"
+4,4,5.96332597557765,0.0932835820895522,0.39136353010749,"Oxidoreductase complex","Oxidoreductase complex"
+6,3,12.3944748902722,0.18407960199005,0.376109642637969,"Mitochondrial outer membrane","Mitochondrial outer
+membrane"
+2,6,2.97544486232666,0.0522388059701493,0.18669102399325,"Mitochondrial protein-containing complex","Mitochondrial protein-containing
+complex"
+1,8,32.2345315103128,0.426305970149254,0.15823577362899,"Mitochondrial membrane","Mitochondrial membrane"

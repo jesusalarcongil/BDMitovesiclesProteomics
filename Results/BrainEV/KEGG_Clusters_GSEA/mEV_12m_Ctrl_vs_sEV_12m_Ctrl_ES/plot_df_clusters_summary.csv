@@ -1,0 +1,5 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+1,13,6.47400628338619,1.58038352719479,0.718402616787024,"Diabetic cardiomyopathy","Diabetic cardiomyopathy"
+5,4,2.65433972012739,1.4923933131357,0.613425925925926,"Spinocerebellar ataxia","Spinocerebellar ataxia"
+2,8,2.09270103163683,-1.7510938782031,0.50806448468849,"Cholinergic synapse","Cholinergic synapse"
+3,8,1.58791814087643,-1.696096767113,0.460034013605442,"Long-term potentiation","Long-term potentiation"

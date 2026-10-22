@@ -1,0 +1,7 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+1,14,2.09900665338306,0.136670416197975,0.767751673204772,"Proton transmembrane transporter activity","Proton transmembrane
+transporter activity"
+3,4,3.29024276426934,0.047244094488189,0.470005553966155,"Proton channel activity","Proton channel
+activity"
+2,5,4.2773643818033,0.100787401574803,0.376666665567838,"Oxidoreductase activity","Oxidoreductase activity"
+4,4,2.12600580516526,0.0492125984251968,0.14754547612414,"Tetrapyrrole binding","Tetrapyrrole binding"

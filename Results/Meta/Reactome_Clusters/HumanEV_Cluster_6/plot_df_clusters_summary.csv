@@ -1,0 +1,10 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+5,4,4.70596831270129,0.0979381443298969,0.933333333333333,"Mitochondrial biogenesis","Mitochondrial biogenesis"
+1,5,2.65344029488866,0.045360824742268,0.88,"Pdh complex synthesizes acetyl-coa from pyr","Pdh complex synthesizes
+acetyl-coa from pyr"
+2,5,12.1737991274458,0.307216494845361,0.20750288373576,"Aerobic respiration and respiratory electron transport","Aerobic respiration and
+respiratory electron transport"
+4,5,3.78694982125088,0.0742268041237113,0.206261589287905,"Citric acid cycle (tca cycle)","Citric acid cycle
+(tca cycle)"
+3,5,4.49894020016742,0.0989690721649484,0.13645652173913,"Respiratory electron transport","Respiratory electron
+transport"

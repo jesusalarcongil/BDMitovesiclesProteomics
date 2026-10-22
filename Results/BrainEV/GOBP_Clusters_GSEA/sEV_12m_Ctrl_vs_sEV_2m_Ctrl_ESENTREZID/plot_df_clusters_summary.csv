@@ -1,0 +1,28 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+7,2,1.95728578752584,-1.20752862558087,0.841748602449479,"Cellular metabolic process","Cellular metabolic
+process"
+8,2,2.06951546703075,-1.30521172077441,0.700654352294057,"Biosynthetic process","Biosynthetic process"
+9,2,3.27080730492323,-1.46978311844856,0.589276516736917,"Nucleobase-containing compound biosynthetic process","Nucleobase-containing compound
+biosynthetic process"
+3,6,2.59093464994059,-1.66517073489728,0.572714302189507,"Atp biosynthetic process","Atp biosynthetic
+process"
+10,2,3.10226599339959,-1.5854385813474,0.529374062087769,"Carbohydrate derivative biosynthetic process","Carbohydrate derivative
+biosynthetic process"
+11,2,2.61450748251686,-1.6280449853415,0.510264236954075,"Purine nucleotide biosynthetic process","Purine nucleotide
+biosynthetic process"
+12,2,2.47067246108889,-1.59352963502615,0.505098959006006,"Purine-containing compound biosynthetic process","Purine-containing compound
+biosynthetic process"
+2,8,3.22986236111698,-1.70538662990376,0.490757348723679,"Cellular respiration","Cellular respiration"
+6,3,1.91196504358515,-1.50517167305441,0.477317773960406,"Negative regulation of cellular metabolic process","Negative regulation of
+cellular metabolic process"
+5,4,2.72447913774458,-1.67872439379398,0.443359778242104,"Negative regulation of nucleobase-containing compound metabolic process","Negative regulation of nucleobase-containing
+compound metabolic process"
+1,13,2.5647885733288,-1.62404290401632,0.425335578109391,"Nucleoside triphosphate biosynthetic process","Nucleoside triphosphate
+biosynthetic process"
+4,5,2.42125072353018,-1.60201594150366,0.416176591623232,"Ribonucleotide biosynthetic process","Ribonucleotide biosynthetic
+process"
+13,2,2.42426256641899,-1.67385431813162,0.31049123189862,"Mrna metabolic process","Mrna metabolic
+process"
+14,2,3.45848489441177,-1.68748130510152,0.276575760746137,"Generation of precursor metabolites and energy","Generation of precursor
+metabolites and energy"
+15,2,3.31112102645201,-1.69766654644068,0.234680645689729,"Translation","Translation"

@@ -1,0 +1,4 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+0,2,1.64241581069933,0.027027027027027,0.50162340642771,"Nucleoid","Nucleoid"
+2,3,1.78489007685332,0.0540540540540541,0.23392680291907,"Ribosomal subunit","Ribosomal subunit"
+1,10,5.79075895229236,0.151351351351351,0.182990338932127,"Mitochondrial envelope","Mitochondrial envelope"

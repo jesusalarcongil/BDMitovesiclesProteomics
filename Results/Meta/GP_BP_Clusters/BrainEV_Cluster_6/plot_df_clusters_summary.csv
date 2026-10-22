@@ -1,0 +1,29 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+4,10,29.0378588466358,0.327272727272727,0.522167953703827,"Proton motive force-driven mitochondrial atp synthesis","Proton motive force-driven
+mitochondrial atp synthesis"
+3,11,31.9252577024003,0.267906336088154,0.503047680716152,"Cellular respiration","Cellular respiration"
+1,14,26.7857992181345,0.359307359307359,0.424560545427656,"Purine ribonucleoside triphosphate biosynthetic process","Purine ribonucleoside triphosphate
+biosynthetic process"
+6,7,2.46949446881371,0.04004329004329,0.417918607358142,"Regulation of mitochondrial membrane permeability involved in apoptotic process","Regulation of mitochondrial membrane permeability
+involved in apoptotic process"
+2,13,9.61906200662286,0.243006993006993,0.405948015646851,"Proton transmembrane transport","Proton transmembrane
+transport"
+13,4,21.3919311017306,0.369318181818182,0.364842000321241,"Ribose phosphate biosynthetic process","Ribose phosphate
+biosynthetic process"
+9,6,2.77376555681414,0.125,0.35771110551469,"Dicarboxylic acid metabolic process","Dicarboxylic acid
+metabolic process"
+11,5,17.1916034020477,0.251515151515152,0.357013331725239,"Mitochondrial respiratory chain complex assembly","Mitochondrial respiratory chain
+complex assembly"
+10,5,5.12307915038245,0.124242424242424,0.344311721408242,"Nucleobase-containing compound biosynthetic process","Nucleobase-containing compound
+biosynthetic process"
+7,6,2.06233678493778,0.0606060606060606,0.305092863194322,"Protein targeting to mitochondrion","Protein targeting
+to mitochondrion"
+5,9,7.95980695465989,0.108585858585859,0.289764858125827,"Mitochondrion organization","Mitochondrion organization"
+15,3,53.1804520541855,0.512626262626263,0.28498554624204,"Energy derivation by oxidation of organic compounds","Energy derivation by oxidation
+of organic compounds"
+12,4,21.4394667224483,0.365530303030303,0.261455649050932,"Purine-containing compound biosynthetic process","Purine-containing compound
+biosynthetic process"
+8,6,2.12342867289052,0.053030303030303,0.249321389618323,"Reactive oxygen species metabolic process","Reactive oxygen species
+metabolic process"
+14,4,2.68034933003105,0.0606060606060606,0.200601879092794,"Thioester metabolic process","Thioester metabolic
+process"

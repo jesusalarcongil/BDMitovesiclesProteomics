@@ -1,0 +1,12 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_NES","mean_sim","keywords","label_y_wrapped"
+5,2,1.96093239856331,-1.35563520373612,0.601044801658275,"Membrane protein complex","Membrane protein
+complex"
+1,3,2.54881705522585,-1.64905931392008,0.597347006898791,"Transmembrane transporter complex","Transmembrane transporter
+complex"
+6,2,1.62857342467095,-1.47853880203606,0.540931849484867,"Axon","Axon"
+2,3,1.71202522367082,-1.33492251417812,0.510006155286129,"Plasma membrane bounded cell projection","Plasma membrane bounded
+cell projection"
+7,2,1.49126234393602,-1.63856167321435,0.493969185633327,"Atpase complex","Atpase complex"
+3,3,2.12379410473875,-1.35454181558313,0.45701617372762,"Synapse","Synapse"
+8,2,1.44431807183721,-1.652578957579,0.432707186865799,"Neuron projection membrane","Neuron projection
+membrane"

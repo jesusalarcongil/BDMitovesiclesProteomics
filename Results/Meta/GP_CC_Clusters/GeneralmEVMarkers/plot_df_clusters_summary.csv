@@ -1,0 +1,6 @@
+"cluster","n_terms","mean_minusLog10_padj","mean_gene_ratio","mean_sim","keywords","label_y_wrapped"
+3,5,17.8617210190493,0.272131147540984,0.407762564102457,"Oxidoreductase complex","Oxidoreductase complex"
+2,6,28.4326143403079,0.622950819672131,0.387601283387733,"Respiratory chain complex","Respiratory chain
+complex"
+1,9,25.6496006647377,0.530054644808743,0.195799742825222,"Mitochondrial inner membrane","Mitochondrial inner
+membrane"
